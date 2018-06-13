@@ -6,6 +6,7 @@ package mozilla.components.feature.session
 
 import android.util.AtomicFile
 import mozilla.components.browser.session.Session
+import mozilla.components.browser.session.storage.DefaultSessionStorage
 import mozilla.components.concept.engine.Engine
 import mozilla.components.concept.engine.EngineSession
 import org.json.JSONException

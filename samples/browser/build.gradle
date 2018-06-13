@@ -27,6 +27,12 @@ android {
     }
 }
 
+kotlin {
+    experimental {
+        coroutines "enable"
+    }
+}
+
 dependencies {
     implementation project(':concept-engine')
     implementation project(':concept-session-storage')
@@ -46,8 +52,8 @@ dependencies {
 
     implementation project(':ui-autocomplete')
 
-    implementation "org.mozilla:geckoview-nightly-armeabi-v7a:${rootProject.ext.gecko['version']}"
-    //implementation "org.mozilla:geckoview-nightly-x86:${rootProject.ext.gecko['version']}"
+    //implementation "org.mozilla:geckoview-nightly-armeabi-v7a:${rootProject.ext.gecko['version']}"
+    implementation "org.mozilla:geckoview-nightly-x86:${rootProject.ext.gecko['version']}"
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:${rootProject.ext.dependencies['kotlin']}"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:${rootProject.ext.dependencies['coroutines']}"

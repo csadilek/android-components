@@ -5,9 +5,9 @@
 package mozilla.components.feature.session
 
 import mozilla.components.browser.session.Session
+import mozilla.components.browser.session.storage.SessionStorage
 import mozilla.components.concept.engine.Engine
 import mozilla.components.concept.engine.EngineSession
-import mozilla.components.concept.session.storage.SessionStorage
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
