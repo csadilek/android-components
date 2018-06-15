@@ -57,36 +57,42 @@ class SessionManager(
         }
     }
 
+    /**
+     * Gets the linked engine session for the provided session (if it exists).
+     */
     fun getEngineSession(session: Session = selectedSession) = session.engineSessionHolder.engineSession
 
+    /**
+     * Gets the linked engine session for the provided session and creates it if needed.
+     */
     fun getOrCreateEngineSession(session: Session = selectedSession): EngineSession {
-        val enginSession = getEngineSession(session)
-        if (enginSession != null) {
-            return enginSession
-        }
+        getEngineSession(session)?.let { return it }
 
-        val newEngineSession = engine.createSession()
-        link(session, newEngineSession)
-        return newEngineSession
+        return engine.createSession().apply {
+            link(session, this)
+        }
     }
 
     private fun link(session: Session, engineSession: EngineSession) {
         unlink(session)
 
-        session.engineSessionHolder.let { holder ->
-            holder.engineSession = engineSession
-            holder.engineObserver = EngineObserver(session).also { observer ->
+        session.engineSessionHolder.apply {
+            this.engineSession = engineSession
+            this.engineObserver = EngineObserver(session).also { observer ->
                 engineSession.register(observer)
+                engineSession.loadUrl(session.url)
             }
-            engineSession.loadUrl(session.url)
         }
     }
 
-    fun unlink(session: Session) {
+    private fun unlink(session: Session) {
         session.engineSessionHolder.engineObserver?.let { observer ->
-            session.engineSessionHolder.engineSession?.unregister(observer)
-            session.engineSessionHolder.engineSession?.close()
-            session.engineSessionHolder.engineSession = null
+            session.engineSessionHolder.apply {
+                engineSession?.unregister(observer)
+                engineSession?.close()
+                engineSession = null
+                engineObserver = null
+            }
         }
     }
 

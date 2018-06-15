@@ -5,10 +5,14 @@
 package mozilla.components.browser.session
 
 import mozilla.components.browser.session.helper.mock
+import mozilla.components.concept.engine.Engine
+import mozilla.components.concept.engine.EngineSession
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
@@ -278,5 +282,67 @@ class SessionManagerTest {
         assertEquals(session4, manager.findSessionById(session4.id))
 
         assertNull(manager.findSessionById("banana"))
+    }
+
+    @Test
+    fun `session manager creates and links engine session`() {
+        val engine: Engine = mock()
+
+        val actualEngineSession: EngineSession = mock()
+        doReturn(actualEngineSession).`when`(engine).createSession()
+
+        val sessionManager = SessionManager(engine)
+
+        val session = Session("https://www.mozilla.org")
+        sessionManager.add(session)
+
+        assertNull(sessionManager.getEngineSession(session))
+
+        assertEquals(actualEngineSession, sessionManager.getOrCreateEngineSession(session))
+        assertEquals(actualEngineSession, sessionManager.getEngineSession(session))
+        assertEquals(actualEngineSession, sessionManager.getOrCreateEngineSession(session))
+    }
+
+    @Test
+    fun `removing a session unlinks the engine session`() {
+        val engine: Engine = mock()
+
+        val actualEngineSession: EngineSession = mock()
+        doReturn(actualEngineSession).`when`(engine).createSession()
+
+        val sessionManager = SessionManager(engine)
+
+        val session = Session("https://www.mozilla.org")
+        sessionManager.add(session)
+
+        assertNotNull(sessionManager.getOrCreateEngineSession(session))
+        assertNotNull(session.engineSessionHolder.engineSession)
+        assertNotNull(session.engineSessionHolder.engineObserver)
+
+        sessionManager.remove(session)
+
+        assertNull(session.engineSessionHolder.engineSession)
+        assertNull(session.engineSessionHolder.engineObserver)
+    }
+
+    @Test
+    fun `add will link an engine session if provided`() {
+        val engine: Engine = mock()
+
+        val actualEngineSession: EngineSession = mock()
+        val sessionManager = SessionManager(engine)
+
+        val session = Session("https://www.mozilla.org")
+        assertNull(session.engineSessionHolder.engineSession)
+        assertNull(session.engineSessionHolder.engineObserver)
+
+        sessionManager.add(session, engineSession = actualEngineSession)
+
+        assertNotNull(session.engineSessionHolder.engineSession)
+        assertNotNull(session.engineSessionHolder.engineObserver)
+
+        assertEquals(actualEngineSession, sessionManager.getOrCreateEngineSession(session))
+        assertEquals(actualEngineSession, sessionManager.getEngineSession(session))
+        assertEquals(actualEngineSession, sessionManager.getOrCreateEngineSession(session))
     }
 }
