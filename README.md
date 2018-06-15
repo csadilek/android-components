@@ -105,8 +105,6 @@ _API contracts and abstraction layers for browser components._
 
 * 🔴 [**Engine**](components/concept/engine/README.md) - Abstraction layer that allows hiding the actual browser engine implementation.
 
-* 🔴 [**Session-Storage**](components/concept/session-storage/README.md) - Abstraction layer and contracts for hiding the actual session storage implementation.
-
 * 🔴 [**Toolbar**](components/concept/toolbar/README.md) - Abstract definition of a browser toolbar component.
 
 ## Feature
