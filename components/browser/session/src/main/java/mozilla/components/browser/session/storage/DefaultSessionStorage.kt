@@ -114,7 +114,7 @@ class DefaultSessionStorage(
                 val sessionJson = JSONObject()
                 sessionJson.put(SESSION_KEY, serializeSession(session))
                 sessionJson.put(ENGINE_SESSION_KEY, serializeEngineSession(sessionManager.getEngineSession(session)))
-                sessionJson.put(session.id, sessionJson)
+                json.put(session.id, sessionJson)
             })
 
             file = getFile()
