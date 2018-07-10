@@ -66,7 +66,7 @@ class DefaultSessionStorageTest {
 
         val restoredSession = restoredSessionManager.sessions.first()
         assertEquals(session, restoredSession)
-        assertEquals(session.id, restoredSessionManager.selectedSession.id)
+        assertEquals(session.id, restoredSessionManager.selectedSessionOrThrow.id)
         assertEquals(session.url, restoredSession.url)
 
         val restoredEngineSession = restoredSessionManager.sessions.first().engineSessionHolder.engineSession

@@ -21,8 +21,13 @@ class EngineViewPresenter(
      * Start presenter and display data in view.
      */
     fun start() {
-        val session = sessionId?.let { sessionManager.findSessionById(sessionId) } ?: sessionManager.selectedSession
-        renderSession(session)
+        val session = if (sessionId != null) {
+            sessionManager.findSessionById(sessionId)
+        } else {
+            sessionManager.selectedSession
+        }
+
+        session?.let { renderSession(it) }
 
         sessionManager.register(this)
     }
