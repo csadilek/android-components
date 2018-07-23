@@ -7,10 +7,10 @@ package mozilla.components.browser.engine.gecko
 import kotlinx.coroutines.experimental.CompletableDeferred
 import kotlinx.coroutines.experimental.runBlocking
 import mozilla.components.concept.engine.EngineSession
-import org.mozilla.geckoview.GeckoResponse
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoSession
 import kotlinx.coroutines.experimental.launch
+import org.mozilla.geckoview.GeckoResult
 
 /**
  * Gecko-based EngineSession implementation.
@@ -76,13 +76,13 @@ class GeckoEngineSession(
     override fun saveState(): Map<String, Any> = runBlocking {
         val stateMap = CompletableDeferred<Map<String, Any>>()
         launch {
-            geckoSession.saveState { state ->
-                if (state != null) {
-                    stateMap.complete(mapOf(GECKO_STATE_KEY to state.toString()))
-                } else {
-                    stateMap.completeExceptionally(GeckoEngineException("Failed to save state"))
-                }
-            }
+            geckoSession.saveState().then({ state ->
+                stateMap.complete(mapOf(GECKO_STATE_KEY to state.toString()))
+                GeckoResult<Void>()
+            }, { throwable ->
+                stateMap.completeExceptionally(throwable)
+                GeckoResult<Void>()
+            })
         }
         stateMap.await()
     }
@@ -112,13 +112,12 @@ class GeckoEngineSession(
         }
 
         override fun onLoadRequest(
-            session: GeckoSession?,
-            uri: String?,
+            session: GeckoSession,
+            uri: String,
             target: Int,
-            flags: Int,
-            response: GeckoResponse<Boolean>
-        ) {
-            response.respond(false)
+            flags: Int
+        ): GeckoResult<Boolean>? {
+            return GeckoResult.fromValue(true)
         }
 
         override fun onCanGoForward(session: GeckoSession?, canGoForward: Boolean) {
@@ -130,10 +129,9 @@ class GeckoEngineSession(
         }
 
         override fun onNewSession(
-            session: GeckoSession?,
-            uri: String?,
-            response: GeckoResponse<GeckoSession>
-        ) {}
+            session: GeckoSession,
+            uri: String
+        ): GeckoResult<GeckoSession> = GeckoResult.fromValue(null)
     }
 
     /**
