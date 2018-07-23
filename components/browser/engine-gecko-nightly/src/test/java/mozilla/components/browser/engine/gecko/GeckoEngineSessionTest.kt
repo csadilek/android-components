@@ -11,7 +11,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.ArgumentMatchers.any
@@ -185,7 +184,6 @@ class GeckoEngineSessionTest {
     }
 
     @Test
-    @Ignore
     fun testSaveState() {
         val engineSession = GeckoEngineSession(mock(GeckoRuntime::class.java))
         engineSession.geckoSession = mock(GeckoSession::class.java)
@@ -193,24 +191,16 @@ class GeckoEngineSessionTest {
         val stateMap = mapOf(GeckoEngineSession.GECKO_STATE_KEY to currentState.toString())
 
         `when`(engineSession.geckoSession.saveState()).thenReturn(GeckoResult.fromValue(currentState))
-
-        // Hangs indefinitely:
-        // Exception in thread "ForkJoinPool.commonPool-worker-1" java.lang.RuntimeException: Can't
-        // create handler inside thread that has not called Looper.prepare()
         assertEquals(stateMap, engineSession.saveState())
     }
 
     @Test
-    @Ignore
-    fun testSaveStateThrowsExceptionOnNullResult() {
+    fun testSaveStateThrowsException() {
         val engineSession = GeckoEngineSession(mock(GeckoRuntime::class.java))
         engineSession.geckoSession = mock(GeckoSession::class.java)
-        `when`(engineSession.geckoSession.saveState()).thenReturn(GeckoResult.fromValue(null))
+        `when`(engineSession.geckoSession.saveState()).thenThrow(GeckoEngineException("test"))
 
         try {
-            // Hangs indefinitely:
-            // Exception in thread "ForkJoinPool.commonPool-worker-1" java.lang.RuntimeException: Can't
-            // create handler inside thread that has not called Looper.prepare()
             engineSession.saveState()
             fail("Expected GeckoEngineException")
         } catch (e: GeckoEngineException) { }
