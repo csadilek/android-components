@@ -435,7 +435,7 @@ class FretboardTest {
     }
 
     @Test
-    fun getUserBucketTest() {
+    fun testGetUserBucket() {
         val context = mock(Context::class.java)
         val sharedPrefs = mock(SharedPreferences::class.java)
         val prefsEditor = mock(SharedPreferences.Editor::class.java)
@@ -452,7 +452,7 @@ class FretboardTest {
     }
 
     @Test
-    fun evenDistributionTest() {
+    fun testEvenDistribution() {
         val context = mock(Context::class.java)
         val sharedPrefs = mock(SharedPreferences::class.java)
         val prefsEditor = mock(SharedPreferences.Editor::class.java)
@@ -473,7 +473,7 @@ class FretboardTest {
                 .eachCount()
                 .toSortedMap()
                 .forEach {
-                    assertTrue(it.value in 75..125)
+                    assertTrue(it.value in 70..130)
                 }
 
         distribution
@@ -481,7 +481,7 @@ class FretboardTest {
                 .eachCount()
                 .toSortedMap()
                 .forEach {
-                    assertTrue(it.value in 375..625)
+                    assertTrue(it.value in 350..650)
                 }
     }
 }
