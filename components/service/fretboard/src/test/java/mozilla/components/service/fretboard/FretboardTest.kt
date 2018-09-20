@@ -461,27 +461,30 @@ class FretboardTest {
         `when`(prefsEditor.putString(ArgumentMatchers.anyString(), ArgumentMatchers.anyString())).thenReturn(prefsEditor)
         `when`(context.getSharedPreferences(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt())).thenReturn(sharedPrefs)
 
-        val distribution = (1..1000).map {
-            val experimentEvaluator = ExperimentEvaluator()
-            val f = experimentEvaluator::class.functions.find { it.name == "getUserBucket" }
-            f!!.isAccessible = true
-            f.call(experimentEvaluator, context) as Int
+        for (i in 1..100) {
+            val distribution = (1..1000).map {
+                val experimentEvaluator = ExperimentEvaluator()
+                val f = experimentEvaluator::class.functions.find { it.name == "getUserBucket" }
+                f!!.isAccessible = true
+                f.call(experimentEvaluator, context) as Int
+            }
+
+            distribution
+                    .groupingBy { it / 10 }
+                    .eachCount()
+                    .toSortedMap()
+                    .forEach {
+                        println(it.value)
+                        assertTrue(it.value in 70..130)
+                    }
+
+            distribution
+                    .groupingBy { it / 50 }
+                    .eachCount()
+                    .toSortedMap()
+                    .forEach {
+                        assertTrue(it.value in 350..650)
+                    }
         }
-
-        distribution
-                .groupingBy { it / 10 }
-                .eachCount()
-                .toSortedMap()
-                .forEach {
-                    assertTrue(it.value in 70..130)
-                }
-
-        distribution
-                .groupingBy { it / 50 }
-                .eachCount()
-                .toSortedMap()
-                .forEach {
-                    assertTrue(it.value in 350..650)
-                }
     }
 }
