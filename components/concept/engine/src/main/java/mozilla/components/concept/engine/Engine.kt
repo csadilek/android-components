@@ -6,11 +6,22 @@ package mozilla.components.concept.engine
 
 import android.content.Context
 import android.util.AttributeSet
+import mozilla.components.concept.engine.file.FilePrompt
+import mozilla.components.concept.engine.geo.GeoPrompt
+import mozilla.components.concept.engine.window.Window
 
 /**
  * Entry point for interacting with the engine implementation.
  */
 interface Engine {
+
+    interface Observer {
+        fun onFilePrompt(session: EngineSession, filePrompt: FilePrompt) = Unit
+        fun onCreateWindow(session: EngineSession, window: Window) = Unit
+        fun onCloseWindow(session:EngineSession, window:Window) = Unit
+        fun onShowGeoPermissionPrompt(session: EngineSession, geoPrompt: GeoPrompt)
+        fun onHideGeoPermissionPrompt(session: EngineSession, geoPrompt: GeoPrompt)
+    }
 
     /**
      * Creates a new view for rendering web content.
