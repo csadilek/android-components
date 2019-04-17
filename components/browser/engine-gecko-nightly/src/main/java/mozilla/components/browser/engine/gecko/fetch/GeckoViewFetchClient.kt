@@ -22,6 +22,8 @@ import org.mozilla.geckoview.WebResponse
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.charset.Charset
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
@@ -91,12 +93,24 @@ private fun WebRequest.Builder.addHeadersFrom(request: Request, defaultHeaders: 
 }
 
 private fun WebRequest.Builder.addBodyFrom(request: Request): WebRequest.Builder {
-    request.body?.let { body ->
-        body.useStream { inStream ->
-            val bytes = inStream.readBytes()
-            val buffer = ByteBuffer.allocateDirect(bytes.size)
-            buffer.put(bytes)
-            this.body(buffer)
+    if (request.url.contains("storage/history") && request.method == Request.Method.POST) {
+        var fakeBody = ""
+        for (i in 1..4096) {
+            fakeBody += "a"
+        }
+
+        val fakeBytes = fakeBody.toByteArray(Charsets.UTF_8)
+        val buffer = ByteBuffer.allocateDirect(fakeBytes.size)
+        buffer.put(fakeBytes)
+        this.body(buffer)
+    } else {
+        request.body?.let { body ->
+            body.useStream { inStream ->
+                val bytes = inStream.readBytes()
+                val buffer = ByteBuffer.allocateDirect(bytes.size)
+                buffer.put(bytes)
+                this.body(buffer)
+            }
         }
     }
 
