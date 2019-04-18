@@ -4,6 +4,7 @@
 
 package mozilla.components.tooling.fetch.tests
 
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import mozilla.components.concept.fetch.Client
@@ -486,6 +487,40 @@ abstract class FetchTestCases {
             // expected
         } catch (e: Exception) {
             fail("Expected IOException")
+        }
+    }
+
+    @Test
+    open fun post200WithLargeBody() {
+        var fakeBody = ""
+        for (i in 1..4096) {
+            fakeBody += "a"
+        }
+
+        fakeBody += "b"
+
+        withServerResponding(
+                MockResponse()
+        ) { client ->
+            val response = client.fetch(Request(
+                    url = rootUrl(),
+                    method = Request.Method.POST,
+                    headers = MutableHeaders()
+                            .set("Accept", "*/*")
+                            .set("Accept-Encoding", "gzip")
+                            .set("Cache-Control", "no-cache")
+                            .set("Content-Type", "application/json"),
+                    body = Request.Body.fromString(fakeBody)
+            ))
+            assertEquals(200, response.status)
+
+            val request = takeRequest()
+
+            assertEquals("POST", request.method)
+            val receivedBody = request.body.readUtf8()
+
+            assertEquals(fakeBody.length, receivedBody.length)
+            assertEquals(fakeBody, receivedBody)
         }
     }
 
