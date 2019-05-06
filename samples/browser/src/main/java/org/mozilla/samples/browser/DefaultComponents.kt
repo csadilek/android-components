@@ -110,7 +110,8 @@ open class DefaultComponents(private val applicationContext: Context) {
                     Toast.makeText(applicationContext, "Share", Toast.LENGTH_SHORT).show()
                 },
                 SimpleBrowserMenuItem("Settings") {
-                    Toast.makeText(applicationContext, "Settings", Toast.LENGTH_SHORT).show()
+                    //Toast.makeText(applicationContext, "Settings", Toast.LENGTH_SHORT).show()
+                    tabsUseCases.addTab.invoke("http://mozilla.org")
                 },
                 SimpleBrowserMenuItem("Find In Page") {
                     FindInPageIntegration.launch?.invoke()
