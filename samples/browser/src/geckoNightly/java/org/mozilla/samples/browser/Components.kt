@@ -14,7 +14,7 @@ import mozilla.components.support.base.log.Log
 class Components(private val applicationContext: Context) : DefaultComponents(applicationContext) {
     override val engine: Engine by lazy {
         GeckoEngine(applicationContext, engineSettings).apply {
-            installWebExtension("mozacBorderify", "resource://android/assets/extensions/borderify/") {
+            installWebExtension("mozacTabsTest", "resource://android/assets/extensions/tab/") {
                 ext, throwable -> Log.log(Log.Priority.ERROR, "SampleBrowser", throwable, "Failed to install $ext")
             }
 
