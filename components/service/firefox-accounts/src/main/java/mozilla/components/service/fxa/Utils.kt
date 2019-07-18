@@ -8,6 +8,7 @@ import mozilla.components.concept.sync.AuthException
 import mozilla.components.concept.sync.AuthExceptionType
 import mozilla.components.service.fxa.manager.authErrorRegistry
 import mozilla.components.support.base.log.logger.Logger
+import kotlin.experimental.and
 
 /**
  * Runs a provided lambda, and if that throws non-panic, non-auth FxA exception, runs [handleErrorBlock].
