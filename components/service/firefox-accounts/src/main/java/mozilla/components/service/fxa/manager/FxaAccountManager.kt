@@ -23,16 +23,9 @@ import mozilla.components.concept.sync.DeviceEventsObserver
 import mozilla.components.concept.sync.OAuthAccount
 import mozilla.components.concept.sync.Profile
 import mozilla.components.concept.sync.StatePersistenceCallback
-import mozilla.components.service.fxa.AccountStorage
-import mozilla.components.service.fxa.DeviceConfig
-import mozilla.components.service.fxa.FirefoxAccount
-import mozilla.components.service.fxa.FxaException
-import mozilla.components.service.fxa.FxaPanicException
-import mozilla.components.service.fxa.ServerConfig
-import mozilla.components.service.fxa.SharedPrefAccountStorage
-import mozilla.components.service.fxa.SyncAuthInfoCache
-import mozilla.components.service.fxa.SyncConfig
-import mozilla.components.service.fxa.asSyncAuthInfo
+import mozilla.components.service.fxa.*
+import mozilla.components.service.fxa.migration.AccountMigration
+import mozilla.components.service.fxa.migration.MigratableAccount
 import mozilla.components.service.fxa.sync.SyncManager
 import mozilla.components.service.fxa.sync.SyncStatusObserver
 import mozilla.components.service.fxa.sync.WorkManagerSyncManager
@@ -171,6 +164,12 @@ open class FxaAccountManager(
                 AccountState.NotAuthenticated -> when (event) {
                     Event.Authenticate -> AccountState.NotAuthenticated
                     Event.FailedToAuthenticate -> AccountState.NotAuthenticated
+
+                    // take action, handling migration
+                    is Event.MigrateAccount -> AccountState.NotAuthenticated
+                    // we're done migrating, move to right state
+                    Event.MigratedAccount -> AccountState.AuthenticatedNoProfile
+
                     is Event.Pair -> AccountState.NotAuthenticated
                     is Event.Authenticated -> AccountState.AuthenticatedNoProfile
                     else -> null
@@ -240,6 +239,30 @@ open class FxaAccountManager(
         } else {
             logger.info("Sync is enabled")
         }
+    }
+
+    /**
+     * TODO
+     */
+    fun migratableAccounts(context: Context): List<MigratableAccount> {
+        return AccountMigration.queryMigratableAccounts(context)
+    }
+
+    /**
+     * TODO
+     */
+    fun migrateAccountAsync(fromAccount: MigratableAccount): Deferred<Boolean> {
+        // await for state machine
+        // query account state
+        // - have an account, we're good
+        // - otherwise, we failed somehow
+        val stateMachineTransition = processQueueAsync(Event.MigrateAccount(fromAccount))
+        val result = CompletableDeferred<Boolean>()
+        CoroutineScope(coroutineContext).launch {
+            stateMachineTransition.await()
+            result.complete(authenticatedAccount() != null)
+        }
+        return result
     }
 
     /**
@@ -477,6 +500,21 @@ open class FxaAccountManager(
                     Event.Authenticate -> {
                         return doAuthenticate()
                     }
+                    is Event.MigrateAccount -> {
+                        account.registerPersistenceCallback(statePersistenceCallback)
+
+                        val migrationResult = account.migrateFromSessionTokenAsync(
+                            via.account.authInfo.sessionToken,
+                            via.account.authInfo.kSync,
+                            via.account.authInfo.kXSCS
+                        ).await()
+
+                        return if (migrationResult) {
+                            Event.MigratedAccount
+                        } else {
+                            null
+                        }
+                    }
                     is Event.Pair -> {
                         val url = account.beginPairingFlowAsync(via.pairingUrl, scopes).await()
                         if (url == null) {
@@ -540,6 +578,23 @@ open class FxaAccountManager(
 
                         Event.FetchProfile
                     }
+                    Event.MigratedAccount -> {
+                        logger.info("Registering device constellation observer")
+                        account.deviceConstellation().register(deviceEventsIntegration)
+
+                        logger.info("Initializing device")
+                        // NB: underlying API is expected to 'ensureCapabilities' as part of device initialization.
+                        account.deviceConstellation().initDeviceAsync(
+                                deviceConfig.name, deviceConfig.type, deviceConfig.capabilities
+                        ).await()
+
+                        maybeUpdateSyncAuthInfoCache()
+
+                        notifyObservers { onAuthenticated(account) }
+
+                        Event.FetchProfile
+                    }
+
                     Event.RecoveredFromAuthenticationProblem -> {
                         // This path is a blend of "authenticated" and "account restored".
                         // We need to re-initialize an fxa device, but we don't need to complete an auth.
