@@ -104,6 +104,10 @@ open class Store<S : State, A : Action>(
         dispatchInternal(action)
     }
 
+    fun dispatchCurrentState(subscription: Subscription<S, A> ) = scope.launch(dispatcherWithExceptionHandler) {
+        subscription.dispatch(currentState)
+    }
+
     @Synchronized
     private fun dispatchInternal(action: A) {
         val newState = reducer(currentState, action)
@@ -147,9 +151,7 @@ open class Store<S : State, A : Action>(
             active = true
 
             // storeReference.get()?.let { store -> observer.invoke(store.state) }
-            storeReference.get()?.let { store ->
-                runBlocking { dispatch(store.state) }
-            }
+            storeReference.get()?.let { it.dispatchCurrentState(this) }
         }
 
         internal suspend fun dispatch(state: S) {
@@ -158,15 +160,13 @@ open class Store<S : State, A : Action>(
             println("Dispatching: " + scope.isActive)
             println("  Context:" + scope.coroutineContext.isActive)
 
-            withContext(scope.coroutineContext) {
+            scope.launch {
                 println("From context")
-
                 // This should not run.
-
                 if (active) {
                     observer.invoke(state)
                 }
-            }
+            }.join()
         }
 
         fun pause() {
@@ -174,6 +174,8 @@ open class Store<S : State, A : Action>(
         }
 
         fun unsubscribe() {
+            active = false
+
             storeReference.get()?.removeSubscription(this)
 
             binding?.unbind()

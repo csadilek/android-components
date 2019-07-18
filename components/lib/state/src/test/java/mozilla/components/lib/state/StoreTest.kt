@@ -6,11 +6,15 @@ package mozilla.components.lib.state
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import mozilla.components.support.test.ext.joinBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.Executors
 
 class StoreTest {
     @Test
@@ -32,6 +36,9 @@ class StoreTest {
 
     @Test
     fun `Observer gets notified about state changes`() {
+        val testDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+        val testScope = CoroutineScope(testDispatcher)
+
         val store = Store(
             TestState(counter = 23),
             ::reducer
@@ -39,8 +46,12 @@ class StoreTest {
 
         var observedValue = 0
 
-        store.observeManually { state -> observedValue = state.counter }.also {
-            it.resume()
+        runBlocking {
+            store.observeManually(testScope) { state ->
+                observedValue = state.counter
+            }.also {
+                it.resume()
+            }
         }
 
         store.dispatch(TestAction.IncrementAction).joinBlocking()
@@ -50,6 +61,9 @@ class StoreTest {
 
     @Test
     fun `Observer gets initial value before state changes`() {
+        val testDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+        val testScope = CoroutineScope(testDispatcher)
+
         val store = Store(
             TestState(counter = 23),
             ::reducer
@@ -57,15 +71,24 @@ class StoreTest {
 
         var observedValue = 0
 
-        store.observeManually { state -> observedValue = state.counter }.also {
-            it.resume()
+
+        runBlocking {
+            store.observeManually(testScope) { state ->
+                observedValue = state.counter
+            }.also {
+                it.resume()
+            }
         }
+
 
         assertEquals(23, observedValue)
     }
 
     @Test
     fun `Observer does not get notified if state does not change`() {
+        val testDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+        val testScope = CoroutineScope(testDispatcher)
+
         val store = Store(
             TestState(counter = 23),
             ::reducer
@@ -73,10 +96,13 @@ class StoreTest {
 
         var stateChangeObserved = false
 
-        store.observeManually { stateChangeObserved = true }.also {
-            it.resume()
+        runBlocking {
+            store.observeManually(testScope) {
+                stateChangeObserved = true
+            }.also {
+                it.resume()
+            }
         }
-
         // Initial state observed
         assertTrue(stateChangeObserved)
         stateChangeObserved = false
@@ -88,6 +114,8 @@ class StoreTest {
 
     @Test
     fun `Observer does not get notified after unsubscribe`() {
+        val testDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+        val testScope = CoroutineScope(testDispatcher)
         println("Start")
 
         val store = Store(
@@ -101,10 +129,13 @@ class StoreTest {
 
         // val scope = CoroutineScope(Dispatchers.IO)
 
-        val subscription = store.observeManually() { state ->
-            observedValue = state.counter
-        }.also {
-            it.resume()
+        var subscription: Store.Subscription<TestState, TestAction>? = null
+        runBlocking {
+            subscription = store.observeManually(testScope) { state ->
+                observedValue = state.counter
+            }.also {
+                it.resume()
+            }
         }
 
         println("Subscribed")
@@ -121,7 +152,7 @@ class StoreTest {
 
         println("unsubscribe")
 
-        subscription.unsubscribe()
+        subscription?.unsubscribe()
 
         println("done")
 
