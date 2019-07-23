@@ -624,6 +624,10 @@ class FxaAccountManagerTest {
         val tokenServerEndpointUrl: String? = null,
         val accessToken: (() -> AccessTokenInfo)? = null
     ) : OAuthAccount {
+        override fun migrateFromSessionTokenAsync(sessionToken: String, kSync: String, kXCS: String): Deferred<Boolean> {
+            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        }
+
         var persistenceCallback: StatePersistenceCallback? = null
         var accessTokenErrorCalled = false
 
