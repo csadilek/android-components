@@ -7,6 +7,7 @@ package mozilla.components.support.ktx.kotlin
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import mozilla.components.support.base.log.logger.Logger
+import java.security.MessageDigest
 
 /**
  * Checks whether the given [test] byte sequence exists at the [offset] of this [ByteArray]
@@ -78,4 +79,8 @@ fun ByteArray.toHexString(hexLength: Int): String {
     }
 
     return hs.toString()
+}
+
+fun ByteArray.toSha256Digest(): ByteArray {
+    return MessageDigest.getInstance("SHA-256").digest(this)
 }

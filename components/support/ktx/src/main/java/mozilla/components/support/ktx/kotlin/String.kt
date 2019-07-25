@@ -67,19 +67,3 @@ fun String.sha1(): String {
         String(charArrayOf(characters[byte.toInt() shr 4 and 0x0f], characters[byte.toInt() and 0x0f]))
     })
 }
-
-/**
- * TODO
- */
-fun String.toHexBytes(): ByteArray {
-    var str = this
-    if (str.length % 2 == 1) {
-        str = "0$str"
-    }
-
-    val bytes = ByteArray(str.length / 2)
-    for (i in bytes.indices) {
-        bytes[i] = Integer.parseInt(str.substring(2 * i, 2 * i + 2), 16).toByte()
-    }
-    return bytes
-}
