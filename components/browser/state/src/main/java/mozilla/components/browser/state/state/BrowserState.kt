@@ -12,10 +12,11 @@ import mozilla.components.lib.state.State
  * @property tabs the list of open tabs, defaults to an empty list.
  * @property selectedTabId the ID of the currently selected (active) tab.
  * @property customTabs the list of custom tabs, defaults to an empty list.
+ * @property extensions the list of all installed web extensions, defaults to an empty list.
  */
 data class BrowserState(
     val tabs: List<TabSessionState> = emptyList(),
     val selectedTabId: String? = null,
-
-    val customTabs: List<CustomTabSessionState> = emptyList()
+    val customTabs: List<CustomTabSessionState> = emptyList(),
+    val extensions: List<WebExtensionState> = emptyList()
 ) : State

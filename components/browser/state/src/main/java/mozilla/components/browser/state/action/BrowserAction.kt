@@ -13,6 +13,7 @@ import mozilla.components.browser.state.state.SecurityInfoState
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.browser.state.state.TrackingProtectionState
+import mozilla.components.browser.state.state.WebExtensionState
 import mozilla.components.browser.state.state.content.DownloadState
 import mozilla.components.browser.state.state.content.FindResultState
 import mozilla.components.concept.engine.EngineSession
@@ -21,6 +22,8 @@ import mozilla.components.concept.engine.HitResult
 import mozilla.components.concept.engine.content.blocking.Tracker
 import mozilla.components.concept.engine.prompt.PromptRequest
 import mozilla.components.lib.state.Action
+
+typealias WebExtensionBrowserAction = mozilla.components.concept.engine.webextension.BrowserAction
 
 /**
  * [Action] implementation related to [BrowserState].
@@ -239,6 +242,12 @@ sealed class TrackingProtectionAction : BrowserAction() {
      * Clears the [TrackingProtectionState.blockedTrackers] and [TrackingProtectionState.blockedTrackers] lists.
      */
     data class ClearTrackersAction(val tabId: String) : TrackingProtectionAction()
+}
+
+sealed class WebExtensionAction : BrowserAction() {
+    data class InstallWebExtension(val extension: WebExtensionState) : WebExtensionAction()
+    data class UpdateBrowserAction(val extensionId: String, val browserAction: WebExtensionBrowserAction) : WebExtensionAction()
+    data class ConsumeBrowserAction(val extensionId: String) : WebExtensionAction()
 }
 
 /**

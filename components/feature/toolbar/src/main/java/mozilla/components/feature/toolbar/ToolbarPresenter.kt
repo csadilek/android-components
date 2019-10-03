@@ -10,9 +10,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
+import mozilla.components.browser.state.action.WebExtensionAction
 import mozilla.components.browser.state.selector.findCustomTabOrSelectedTab
 import mozilla.components.browser.state.state.SessionState
+import mozilla.components.browser.state.state.WebExtensionState
 import mozilla.components.browser.state.store.BrowserStore
+import mozilla.components.concept.engine.webextension.BrowserAction
 import mozilla.components.concept.toolbar.Toolbar
 import mozilla.components.concept.toolbar.Toolbar.SiteTrackingProtection
 import mozilla.components.feature.toolbar.internal.URLRenderer
@@ -21,7 +24,7 @@ import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifChanged
 
 /**
  * Presenter implementation for a toolbar implementation in order to update the toolbar whenever
- * the state of the selected session changes.
+ * the state of the selected session or web extensions changes.
  */
 @Suppress("TooManyFunctions")
 class ToolbarPresenter(
@@ -34,6 +37,7 @@ class ToolbarPresenter(
     internal var renderer = URLRenderer(toolbar, urlRenderConfiguration)
 
     private var scope: CoroutineScope? = null
+    private var webExtensionScope: CoroutineScope? = null
 
     /**
      * Start presenter: Display data in toolbar.
@@ -41,12 +45,14 @@ class ToolbarPresenter(
     fun start() {
         renderer.start()
 
+        observeWebExtensions()
+
         scope = store.flowScoped { flow ->
             flow.map { state -> state.findCustomTabOrSelectedTab(customTabId) }
                 .ifChanged()
                 .collect { state ->
                     if (state == null) {
-                        clear()
+                        clearWebExtensionItems()
                     } else {
                         render(state)
                     }
@@ -56,7 +62,7 @@ class ToolbarPresenter(
 
     fun stop() {
         scope?.cancel()
-
+        webExtensionScope?.cancel()
         renderer.stop()
     }
 
@@ -81,6 +87,48 @@ class ToolbarPresenter(
 
             else -> SiteTrackingProtection.OFF_GLOBALLY
         }
+    }
+
+    @VisibleForTesting(otherwise = PRIVATE)
+    internal fun render(extensions: List<WebExtensionState>) {
+        // Todo: we are going to need a way to link between a webExtensionState?.browserAction and
+        // toolbar browser action, to remove the previous one if exits.
+
+        extensions.forEach { extension ->
+            extension.browserAction?.let { extensionAction ->
+                val toolbarAction = extensionAction.toToolbarAction()
+                toolbar.addBrowserAction(toolbarAction)
+                store.dispatch(WebExtensionAction.ConsumeBrowserAction(extension.id))
+            }
+        }
+    }
+
+    private fun BrowserAction.toToolbarAction() = Toolbar.ActionButton(
+        contentDescription = title, // TODO: Should we show the title on the UI or just the image?
+        imageDrawable = icon,
+        background = badgeBackgroundColor
+        // TODO: TBD  action.badgeText?
+    ) {
+        onClick()
+    }
+
+    private fun observeWebExtensions() {
+        webExtensionScope = store.flowScoped { flow ->
+            flow.map { state -> state.extensions }
+                .ifChanged()
+                .collect { extensionsState ->
+                    if (extensionsState.isEmpty()) {
+                        clearWebExtensionItems()
+                    } else {
+                        render(extensionsState)
+                    }
+                }
+        }
+    }
+
+    @VisibleForTesting(otherwise = PRIVATE)
+    internal fun clearWebExtensionItems() {
+        // TODO: Add api for removing toolbar items
     }
 
     @VisibleForTesting(otherwise = PRIVATE)
