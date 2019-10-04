@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
 import mozilla.components.browser.state.action.WebExtensionAction
 import mozilla.components.browser.state.selector.findCustomTabOrSelectedTab
+import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.state.WebExtensionState
 import mozilla.components.browser.state.store.BrowserStore
@@ -20,6 +21,7 @@ import mozilla.components.concept.toolbar.Toolbar
 import mozilla.components.concept.toolbar.Toolbar.SiteTrackingProtection
 import mozilla.components.feature.toolbar.internal.URLRenderer
 import mozilla.components.lib.state.ext.flowScoped
+import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifAnyChanged
 import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifChanged
 
 /**
@@ -37,7 +39,6 @@ class ToolbarPresenter(
     internal var renderer = URLRenderer(toolbar, urlRenderConfiguration)
 
     private var scope: CoroutineScope? = null
-    private var webExtensionScope: CoroutineScope? = null
 
     /**
      * Start presenter: Display data in toolbar.
@@ -45,48 +46,45 @@ class ToolbarPresenter(
     fun start() {
         renderer.start()
 
-        observeWebExtensions()
-
         scope = store.flowScoped { flow ->
-            flow.map { state -> state.findCustomTabOrSelectedTab(customTabId) }
-                .ifChanged()
+            flow.ifAnyChanged { arrayOf(it.findCustomTabOrSelectedTab(customTabId), it.extensions) }
                 .collect { state ->
-                    if (state == null) {
-                        clearWebExtensionItems()
-                    } else {
-                        render(state)
-                    }
+                    render(state)
                 }
         }
     }
 
     fun stop() {
         scope?.cancel()
-        webExtensionScope?.cancel()
         renderer.stop()
     }
 
     @VisibleForTesting(otherwise = PRIVATE)
-    internal fun render(tab: SessionState) {
-        renderer.post(tab.content.url)
+    internal fun render(state: BrowserState) {
+        val tab = state.findCustomTabOrSelectedTab(customTabId)
+        if (tab != null) {
+            renderer.post(tab.content.url)
 
-        toolbar.setSearchTerms(tab.content.searchTerms)
-        toolbar.displayProgress(tab.content.progress)
+            toolbar.setSearchTerms(tab.content.searchTerms)
+            toolbar.displayProgress(tab.content.progress)
 
-        toolbar.siteSecure = if (tab.content.securityInfo.secure) {
-            Toolbar.SiteSecurity.SECURE
-        } else {
-            Toolbar.SiteSecurity.INSECURE
+            toolbar.siteSecure = if (tab.content.securityInfo.secure) {
+                Toolbar.SiteSecurity.SECURE
+            } else {
+                Toolbar.SiteSecurity.INSECURE
+            }
+
+            toolbar.siteTrackingProtection = when {
+                tab.trackingProtection.enabled && tab.trackingProtection.blockedTrackers.isNotEmpty() ->
+                    SiteTrackingProtection.ON_TRACKERS_BLOCKED
+
+                tab.trackingProtection.enabled -> SiteTrackingProtection.ON_NO_TRACKERS_BLOCKED
+
+                else -> SiteTrackingProtection.OFF_GLOBALLY
+            }
         }
 
-        toolbar.siteTrackingProtection = when {
-            tab.trackingProtection.enabled && tab.trackingProtection.blockedTrackers.isNotEmpty() ->
-                SiteTrackingProtection.ON_TRACKERS_BLOCKED
 
-            tab.trackingProtection.enabled -> SiteTrackingProtection.ON_NO_TRACKERS_BLOCKED
-
-            else -> SiteTrackingProtection.OFF_GLOBALLY
-        }
     }
 
     @VisibleForTesting(otherwise = PRIVATE)

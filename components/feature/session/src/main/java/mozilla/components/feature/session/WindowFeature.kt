@@ -22,6 +22,10 @@ class WindowFeature(private val sessionManager: SessionManager) : LifecycleAware
             val newSession = Session(windowRequest.url, session.private)
             val newEngineSession = windowRequest.prepare()
 
+            sessionManager.all.find {
+
+            }
+
             sessionManager.add(newSession, true, newEngineSession, parent = session)
             windowRequest.start()
             return true
