@@ -7,13 +7,18 @@ package mozilla.components.feature.session
 import mozilla.components.browser.session.Session
 import mozilla.components.browser.session.SessionManager
 import mozilla.components.concept.engine.Engine
+import mozilla.components.concept.engine.EngineSession
+import mozilla.components.concept.engine.webextension.WebExtension
 import mozilla.components.concept.engine.window.WindowRequest
 import mozilla.components.support.test.any
+import mozilla.components.support.test.argumentCaptor
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.whenever
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.mockito.ArgumentMatchers.eq
+import org.mockito.ArgumentMatchers.notNull
 import org.mockito.Mockito.verify
 
 class WindowFeatureTest {
@@ -62,5 +67,19 @@ class WindowFeatureTest {
         val feature = WindowFeature(sessionManager)
         feature.stop()
         verify(sessionManager).unregister(feature.windowObserver)
+    }
+
+    @Test
+    fun `session is added when a web extension opens a new tab`(){
+        val feature = WindowFeature(sessionManager, engine)
+
+        val webExtension: WebExtension = mock()
+        val engineSession: EngineSession = mock()
+        feature.webExtensionsTabsDelegate.onNewTab(webExtension, "https://www.mozilla.org", engineSession)
+
+        val sessionCaptor = argumentCaptor<Session>()
+        verify(sessionManager).add(sessionCaptor.capture(), eq(true), notNull(), any())
+
+        assertEquals(sessionCaptor.value.url, "https://www.mozilla.org")
     }
 }

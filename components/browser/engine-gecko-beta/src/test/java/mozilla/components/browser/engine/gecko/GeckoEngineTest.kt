@@ -17,6 +17,7 @@ import mozilla.components.concept.engine.UnsupportedSettingException
 import mozilla.components.concept.engine.content.blocking.TrackerLog
 import mozilla.components.concept.engine.content.blocking.TrackingProtectionExceptionStorage
 import mozilla.components.concept.engine.mediaquery.PreferredColorScheme
+import mozilla.components.concept.engine.webextension.WebExtensionsTabsDelegate
 import mozilla.components.support.test.any
 import mozilla.components.support.test.argumentCaptor
 import mozilla.components.support.test.eq
@@ -44,6 +45,7 @@ import org.mozilla.geckoview.GeckoRuntimeSettings
 import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.GeckoWebExecutor
 import org.mozilla.geckoview.StorageController
+import org.mozilla.geckoview.WebExtensionController
 import org.robolectric.Robolectric
 import java.io.IOException
 import java.lang.Exception
@@ -472,6 +474,45 @@ class GeckoEngineTest {
 
         assertTrue(onErrorCalled)
         assertEquals(expected, throwable)
+    }
+
+    @Test
+    fun `register web extension tab delegate`() {
+        val runtime: GeckoRuntime = mock()
+        val webExtensionController: WebExtensionController = mock()
+        whenever(runtime.webExtensionController).thenReturn(webExtensionController)
+
+        val webExtensionsTabDelegate: WebExtensionsTabsDelegate = mock()
+        val engine = GeckoEngine(context, runtime = runtime)
+        engine.registerWebExtensionsTabDelegate(webExtensionsTabDelegate)
+
+        val captor = argumentCaptor<WebExtensionController.TabDelegate>()
+        verify(webExtensionController).tabDelegate = captor.capture()
+
+        val engineSessionCaptor = argumentCaptor<GeckoEngineSession>()
+
+        captor.value.onNewTab(null, null)
+        verify(webExtensionsTabDelegate).onNewTab(eq(null), eq(""), engineSessionCaptor.capture())
+
+        assertNotNull(engineSessionCaptor.value)
+        assertFalse(engineSessionCaptor.value.geckoSession.isOpen)
+
+        captor.value.onNewTab(null, "https://www.mozilla.org")
+        verify(webExtensionsTabDelegate).onNewTab(eq(null), eq("https://www.mozilla.org"), engineSessionCaptor.capture())
+
+        assertNotNull(engineSessionCaptor.value)
+        assertFalse(engineSessionCaptor.value.geckoSession.isOpen)
+
+        val webExtension = org.mozilla.geckoview.WebExtension("test")
+        val acWebExtCaptor = argumentCaptor<mozilla.components.browser.engine.gecko.webextension.GeckoWebExtension>()
+        captor.value.onNewTab(webExtension, "https://test-web-mozilla.org")
+        verify(webExtensionsTabDelegate).onNewTab(acWebExtCaptor.capture(), eq("https://test-web-mozilla.org"), engineSessionCaptor.capture())
+
+        assertNotNull(engineSessionCaptor.value)
+        assertFalse(engineSessionCaptor.value.geckoSession.isOpen)
+
+        assertNotNull(acWebExtCaptor.value)
+        assertEquals(acWebExtCaptor.value.id, webExtension.id)
     }
 
     @Test(expected = RuntimeException::class)

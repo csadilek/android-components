@@ -8,13 +8,32 @@ import androidx.annotation.VisibleForTesting
 import mozilla.components.browser.session.SelectionAwareSessionObserver
 import mozilla.components.browser.session.Session
 import mozilla.components.browser.session.SessionManager
+import mozilla.components.concept.engine.Engine
+import mozilla.components.concept.engine.EngineSession
+import mozilla.components.concept.engine.webextension.WebExtension
+import mozilla.components.concept.engine.webextension.WebExtensionsTabsDelegate
 import mozilla.components.concept.engine.window.WindowRequest
 import mozilla.components.support.base.feature.LifecycleAwareFeature
 
 /**
  * Feature implementation for handling window requests.
+ *
+ * Also subscribes for when a web extensions opens a new tab, adds a new session.
+ * @property sessionManager ....
+ *
+ * @param engine (optional) when do I provide this?
  */
-class WindowFeature(private val sessionManager: SessionManager) : LifecycleAwareFeature {
+class WindowFeature(
+    private val sessionManager: SessionManager,
+    engine: Engine? = null
+) : LifecycleAwareFeature {
+
+    @VisibleForTesting
+    internal val webExtensionsTabsDelegate = object : WebExtensionsTabsDelegate {
+        override fun onNewTab(webExtension: WebExtension?, url: String, engineSession: EngineSession) {
+            sessionManager.add(Session(url), true, engineSession)
+        }
+    }
 
     @VisibleForTesting
     internal val windowObserver = object : SelectionAwareSessionObserver(sessionManager) {
@@ -31,6 +50,10 @@ class WindowFeature(private val sessionManager: SessionManager) : LifecycleAware
             sessionManager.remove(session)
             return true
         }
+    }
+
+    init {
+        engine?.registerWebExtensionsTabDelegate(webExtensionsTabsDelegate)
     }
 
     /**
