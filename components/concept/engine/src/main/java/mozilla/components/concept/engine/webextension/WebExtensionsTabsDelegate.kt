@@ -12,6 +12,4 @@ import java.lang.UnsupportedOperationException
  */
 interface WebExtensionsTabsDelegate {
     fun onNewTab(webExtension: WebExtension?, url: String, engineSession: EngineSession) = Unit
-    fun onCloseTab(webExtension: WebExtension?, engineSession: EngineSession): Unit =
-        throw UnsupportedOperationException("WebExtensionsTabsDelegate.onCloseTab is not available in this engine")
 }

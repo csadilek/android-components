@@ -26,6 +26,7 @@ import mozilla.components.concept.engine.utils.EngineVersion
 import mozilla.components.concept.engine.webextension.WebExtension
 import mozilla.components.concept.engine.webextension.WebExtensionsTabsDelegate
 import org.json.JSONObject
+import org.mozilla.geckoview.AllowOrDeny
 import org.mozilla.geckoview.ContentBlockingController
 import org.mozilla.geckoview.ContentBlockingController.Event
 import org.mozilla.geckoview.GeckoResult
@@ -159,16 +160,15 @@ class GeckoEngine(
                 url: String?
             ): GeckoResult<GeckoSession>? {
                 val geckoEngineSession = GeckoEngineSession(runtime, openGeckoSession = false)
-                val targetUrl = url ?: ""
-                val geckoWebExtension =
-                    if (webExtension != null)
-                        GeckoWebExtension(webExtension.id, targetUrl)
-                    else
-                        null
-
-                webExtensionsTabsDelegate.onNewTab(geckoWebExtension, targetUrl, geckoEngineSession)
-
+                val geckoWebExtension = webExtension?.let { GeckoWebExtension(it.id, it.location) }
+                webExtensionsTabsDelegate.onNewTab(geckoWebExtension, url ?: "", geckoEngineSession)
                 return GeckoResult.fromValue(geckoEngineSession.geckoSession)
+            }
+
+            override fun onCloseTab(webExtension: org.mozilla.geckoview.WebExtension?, session: GeckoSession): GeckoResult<AllowOrDeny> {
+                val geckoWebExtension = webExtension?.let { GeckoWebExtension(it.id, it.location) }
+                webExtensionsTabsDelegate.onCloseTab(geckoWebExtension, session)
+                return GeckoResult.fromValue(AllowOrDeny.ALLOW)
             }
         }
 

@@ -485,32 +485,26 @@ class GeckoEngineTest {
         val webExtensionsTabDelegate: WebExtensionsTabsDelegate = mock()
         val engine = GeckoEngine(context, runtime = runtime)
         engine.registerWebExtensionsTabDelegate(webExtensionsTabDelegate)
-
         val captor = argumentCaptor<WebExtensionController.TabDelegate>()
         verify(webExtensionController).tabDelegate = captor.capture()
 
         val engineSessionCaptor = argumentCaptor<GeckoEngineSession>()
-
         captor.value.onNewTab(null, null)
         verify(webExtensionsTabDelegate).onNewTab(eq(null), eq(""), engineSessionCaptor.capture())
-
         assertNotNull(engineSessionCaptor.value)
         assertFalse(engineSessionCaptor.value.geckoSession.isOpen)
 
         captor.value.onNewTab(null, "https://www.mozilla.org")
         verify(webExtensionsTabDelegate).onNewTab(eq(null), eq("https://www.mozilla.org"), engineSessionCaptor.capture())
-
         assertNotNull(engineSessionCaptor.value)
         assertFalse(engineSessionCaptor.value.geckoSession.isOpen)
 
         val webExtension = org.mozilla.geckoview.WebExtension("test")
         val acWebExtCaptor = argumentCaptor<mozilla.components.browser.engine.gecko.webextension.GeckoWebExtension>()
-        captor.value.onNewTab(webExtension, "https://test-web-mozilla.org")
-        verify(webExtensionsTabDelegate).onNewTab(acWebExtCaptor.capture(), eq("https://test-web-mozilla.org"), engineSessionCaptor.capture())
-
+        captor.value.onNewTab(webExtension, "https://test-moz.org")
+        verify(webExtensionsTabDelegate).onNewTab(acWebExtCaptor.capture(), eq("https://test-moz.org"), engineSessionCaptor.capture())
         assertNotNull(engineSessionCaptor.value)
         assertFalse(engineSessionCaptor.value.geckoSession.isOpen)
-
         assertNotNull(acWebExtCaptor.value)
         assertEquals(acWebExtCaptor.value.id, webExtension.id)
     }
