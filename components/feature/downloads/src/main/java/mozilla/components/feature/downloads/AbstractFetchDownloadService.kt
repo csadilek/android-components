@@ -69,10 +69,15 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
         var job: Job? = null,
         var state: DownloadState,
         var currentBytesCopied: Long = 0,
-        var isPaused: Boolean = false,
-        var isCancelled: Boolean = false,
+        var status: DownloadJobStatus,
         var foregroundServiceId: Int = 0
     )
+
+    enum class DownloadJobStatus {
+        ACTIVE,
+        PAUSED,
+        CANCELLED
+    }
 
     private val broadcastReceiver by lazy {
         object : BroadcastReceiver() {
@@ -82,20 +87,18 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
 
                 when (intent.action) {
                     ACTION_PAUSE -> {
-                        currentDownloadJobState.isPaused = true
+                        currentDownloadJobState.status = DownloadJobStatus.PAUSED
                         currentDownloadJobState.job?.cancel()
                     }
 
                     ACTION_RESUME -> {
                         displayOngoingDownloadNotification(currentDownloadJobState.state)
-
                         currentDownloadJobState.job = startDownloadJob(currentDownloadJobState.state, true)
-                        currentDownloadJobState.isPaused = false
+                        currentDownloadJobState.status = DownloadJobStatus.ACTIVE
                     }
 
                     ACTION_CANCEL -> {
-                        // We must set isCancelled here so `copyInChunks` knows to break out of its loop and cancel the operation
-                        currentDownloadJobState.isCancelled = true
+                        currentDownloadJobState.status = DownloadJobStatus.CANCELLED
                         currentDownloadJobState.job?.cancel()
                         NotificationManagerCompat.from(context).cancel(context, currentDownloadJobState.foregroundServiceId.toString())
                     }
@@ -120,7 +123,8 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
         listOfDownloadJobs[download.id] = DownloadJobState(
                 job = startDownloadJob(download, false),
                 state = download,
-                foregroundServiceId = foregroundServiceId
+                foregroundServiceId = foregroundServiceId,
+                status = DownloadJobStatus.ACTIVE
         )
     }
 
@@ -130,9 +134,9 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
             val notification = try {
                 performDownload(download, isResuming)
 
-                if (listOfDownloadJobs[download.id]?.isCancelled == true) { return@launch }
+                if (listOfDownloadJobs[download.id]?.status == DownloadJobStatus.CANCELLED) { return@launch }
 
-                if (listOfDownloadJobs[download.id]?.isPaused == true) {
+                if (listOfDownloadJobs[download.id]?.status == DownloadJobStatus.PAUSED) {
                     tag = listOfDownloadJobs[download.id]?.foregroundServiceId?.toString()!!
                     DownloadNotification.createPausedDownloadNotification(context, download)
                 } else {
@@ -206,9 +210,7 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
     // TODO: Can't "copy in chunks" for files without a contentLength
     private fun copyInChunks(downloadJobState: DownloadJobState, inStream: InputStream, outStream: OutputStream) {
         // To ensure that we copy all files (even ones that don't have fileSize, we must NOT check < fileSize
-
-        // TODO: It may have a passed in copy of downloadJobState so this may not work...
-        while (!downloadJobState.isPaused && !downloadJobState.isCancelled) {
+        while (downloadJobState.status == DownloadJobStatus.ACTIVE) {
             val data = ByteArray(chunkSize)
             val bytesRead = inStream.read(data)
 
