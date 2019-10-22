@@ -23,6 +23,7 @@ import kotlinx.android.synthetic.main.mozac_downloads_prompt.view.*
 import kotlinx.android.synthetic.main.mozac_downloads_prompt.view.download_button
 import mozilla.components.feature.downloads.R.string.mozac_feature_downloads_dialog_download
 import mozilla.components.feature.downloads.R.string.mozac_feature_downloads_dialog_title2
+import android.graphics.drawable.GradientDrawable
 
 /**
  * A confirmation dialog to be called before a download is triggered.
@@ -49,6 +50,8 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
         safeArguments.getInt(KEY_POSITIVE_BUTTON_BACKGROUND_COLOR, DEFAULT_VALUE)
     internal val positiveButtonTextColor get() =
         safeArguments.getInt(KEY_POSITIVE_BUTTON_TEXT_COLOR, DEFAULT_VALUE)
+    internal val positiveButtonRadius get() =
+        safeArguments.getFloat(KEY_POSITIVE_BUTTON_RADIUS, DEFAULT_VALUE.toFloat())
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         // TODO: Do I even need these separate container/dialog things?
@@ -101,6 +104,14 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
             if (positiveButtonTextColor != DEFAULT_VALUE) {
                 val color = ContextCompat.getColor(requireContext(), positiveButtonTextColor)
                 rootView.download_button.setTextColor(color)
+            }
+
+            if (positiveButtonRadius != DEFAULT_VALUE.toFloat()) {
+                val shape = GradientDrawable()
+                shape.shape = GradientDrawable.RECTANGLE
+                shape.setColor(ContextCompat.getColor(requireContext(), positiveButtonBackgroundColor))
+                shape.cornerRadius = positiveButtonRadius
+                rootView.download_button.background = shape
             }
 
             rootView.filename.text = getString(KEY_FILE_NAME, "")
@@ -168,6 +179,10 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
                     positiveButtonTextColor?.apply {
                         putInt(KEY_POSITIVE_BUTTON_TEXT_COLOR, this)
                     }
+
+                    positiveButtonRadius?.apply{
+                        putFloat(KEY_POSITIVE_BUTTON_RADIUS, this)
+                    }
                 }
             }
 
@@ -175,7 +190,6 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
 
             return fragment
         }
-        
 
         const val KEY_DOWNLOAD_TEXT = "KEY_DOWNLOAD_TEXT"
         const val KEY_TITLE_TEXT = "KEY_TITLE_TEXT"
@@ -184,6 +198,7 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
 
         private const val KEY_POSITIVE_BUTTON_BACKGROUND_COLOR = "KEY_POSITIVE_BUTTON_BACKGROUND_COLOR"
         private const val KEY_POSITIVE_BUTTON_TEXT_COLOR = "KEY_POSITIVE_BUTTON_TEXT_COLOR"
+        private const val KEY_POSITIVE_BUTTON_RADIUS = "KEY_POSITIVE_BUTTON_RADIUS"
         private const val KEY_DIALOG_GRAVITY = "KEY_DIALOG_GRAVITY"
         private const val KEY_DIALOG_WIDTH_MATCH_PARENT = "KEY_DIALOG_WIDTH_MATCH_PARENT"
         private const val DEFAULT_VALUE = Int.MAX_VALUE

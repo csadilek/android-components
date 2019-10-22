@@ -29,9 +29,6 @@ abstract class DownloadDialogFragment : AppCompatDialogFragment() {
 
     var contentLength: Long? = null
 
-    // TODO: Remove?
-    var feature: DownloadsFeature? = null
-
     /**
      * Add the metadata of this download object to the arguments of this fragment.
      */

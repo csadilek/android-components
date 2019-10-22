@@ -211,6 +211,7 @@ internal var dialog: DownloadDialogFragment = SimpleDownloadDialogFragment.newIn
         @ColorRes
         val positiveButtonBackgroundColor: Int? = null,
         @ColorRes
-        val positiveButtonTextColor: Int? = null
+        val positiveButtonTextColor: Int? = null,
+        val positiveButtonRadius: Int? = null
     )
 }
