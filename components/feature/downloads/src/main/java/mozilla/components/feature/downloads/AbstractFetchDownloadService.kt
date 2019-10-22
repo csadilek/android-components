@@ -64,7 +64,6 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
 
     private var listOfDownloadJobs = mutableMapOf<Long, DownloadJobState>()
 
-    // TODO: Can this be simplified/refactored?
     data class DownloadJobState(
         var job: Job? = null,
         var state: DownloadState,
@@ -101,6 +100,11 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
                         currentDownloadJobState.status = DownloadJobStatus.CANCELLED
                         currentDownloadJobState.job?.cancel()
                         NotificationManagerCompat.from(context).cancel(context, currentDownloadJobState.foregroundServiceId.toString())
+                    }
+                    ACTION_TRY_AGAIN -> {
+                        currentDownloadJobState.job = startDownloadJob(currentDownloadJobState.state, false)
+                        currentDownloadJobState.status = DownloadJobStatus.ACTIVE
+                        displayOngoingDownloadNotification(currentDownloadJobState.state)
                     }
                 }
             }
@@ -144,9 +148,8 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
                     DownloadNotification.createDownloadCompletedNotification(context, download.fileName)
                 }
             } catch (e: IOException) {
-                // TODO: Test failed notification download
                 tag = listOfDownloadJobs[download.id]?.foregroundServiceId?.toString()!!
-                DownloadNotification.createDownloadFailedNotification(context, download.fileName)
+                DownloadNotification.createDownloadFailedNotification(context, download)
             }
 
             NotificationManagerCompat.from(context).notify(
@@ -164,6 +167,7 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
             addAction(ACTION_PAUSE)
             addAction(ACTION_RESUME)
             addAction(ACTION_CANCEL)
+            addAction(ACTION_TRY_AGAIN)
         }
 
         context.registerReceiver(broadcastReceiver, filter)
@@ -207,7 +211,6 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
         }
     }
 
-    // TODO: Can't "copy in chunks" for files without a contentLength
     private fun copyInChunks(downloadJobState: DownloadJobState, inStream: InputStream, outStream: OutputStream) {
         // To ensure that we copy all files (even ones that don't have fileSize, we must NOT check < fileSize
         while (downloadJobState.status == DownloadJobStatus.ACTIVE) {
@@ -306,11 +309,10 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
     }
 
     companion object {
-        private const val ONGOING_DOWNLOAD_NOTIFICATION_TAG = "OngoingDownload"
-        private const val COMPLETED_DOWNLOAD_NOTIFICATION_TAG = "CompletedDownload"
         const val ACTION_PAUSE = "mozilla.components.feature.downloads.PAUSE"
         const val ACTION_RESUME = "mozilla.components.feature.downloads.RESUME"
         const val ACTION_CANCEL = "mozilla.components.feature.downloads.CANCEL"
+        const val ACTION_TRY_AGAIN = "mozilla.components.feature.downloads.TRY_AGAIN"
         const val chunkSize = 4 * 1024
     }
 }

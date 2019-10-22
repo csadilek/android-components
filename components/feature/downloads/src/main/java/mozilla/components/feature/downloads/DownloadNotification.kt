@@ -24,6 +24,7 @@ import mozilla.components.browser.state.state.content.DownloadState
 import mozilla.components.feature.downloads.AbstractFetchDownloadService.Companion.ACTION_CANCEL
 import mozilla.components.feature.downloads.AbstractFetchDownloadService.Companion.ACTION_PAUSE
 import mozilla.components.feature.downloads.AbstractFetchDownloadService.Companion.ACTION_RESUME
+import mozilla.components.feature.downloads.AbstractFetchDownloadService.Companion.ACTION_TRY_AGAIN
 import kotlin.random.Random
 
 internal object DownloadNotification {
@@ -59,7 +60,6 @@ internal object DownloadNotification {
         val channelId = ensureChannelExists(context)
 
         return NotificationCompat.Builder(context, channelId)
-                // TODO: Set the drawable to be a pause icon
                 .setSmallIcon(R.drawable.mozac_feature_download_ic_download)
                 .setContentTitle(downloadState?.fileName)
                 .setContentText(context.getString(R.string.mozac_feature_downloads_paused_notification_text))
@@ -92,17 +92,16 @@ internal object DownloadNotification {
     /**
      * Build the notification to be displayed when a download fails to finish.
      */
-    fun createDownloadFailedNotification(context: Context, fileName: String?): Notification {
-        // TODO: Pass downloadState in here?
+    fun createDownloadFailedNotification(context: Context, downloadState: DownloadState?): Notification {
         val channelId = ensureChannelExists(context)
 
-        // TODO: Add the try again button?
         return NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.mozac_feature_download_ic_download)
-            .setContentTitle(fileName)
+            .setContentTitle(downloadState?.fileName)
             .setContentText(context.getString(R.string.mozac_feature_downloads_failed_notification_text2))
             .setColor(ContextCompat.getColor(context, R.color.mozac_feature_downloads_notification))
             .setCategory(NotificationCompat.CATEGORY_ERROR)
+            .addAction(getTryAgainAction(context, downloadState?.id))
             .build()
     }
 
@@ -178,6 +177,16 @@ internal object DownloadNotification {
             0,
             context.getString(R.string.mozac_feature_downloads_button_cancel),
             cancelIntent
+        ).build()
+    }
+
+    private fun getTryAgainAction(context: Context, downloadStateId: Long?): NotificationCompat.Action {
+        val tryAgainIntent = createPendingIntent(context, ACTION_TRY_AGAIN, downloadStateId)
+
+        return NotificationCompat.Action.Builder(
+                0,
+                context.getString(R.string.mozac_feature_downloads_button_try_again),
+                tryAgainIntent
         ).build()
     }
 
