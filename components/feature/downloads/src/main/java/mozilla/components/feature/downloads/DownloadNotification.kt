@@ -47,8 +47,8 @@ internal object DownloadNotification {
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .setProgress(1, 0, true)
             .setOngoing(true)
-            .addAction(getPauseAction(context, downloadState?.id ?: -1))
-            .addAction(getCancelAction(context, downloadState?.id ?: -1))
+            .addAction(getPauseAction(context, downloadState?.id))
+            .addAction(getCancelAction(context, downloadState?.id))
             .build()
     }
 
@@ -66,9 +66,8 @@ internal object DownloadNotification {
                 .setColor(ContextCompat.getColor(context, R.color.mozac_feature_downloads_notification))
                 .setCategory(NotificationCompat.CATEGORY_PROGRESS)
                 .setOngoing(true)
-                // TODO: What's the best way to handle a null ID here...?
-                .addAction(getResumeAction(context, downloadState?.id ?: -1))
-                .addAction(getCancelAction(context, downloadState?.id ?: -1))
+                .addAction(getResumeAction(context, downloadState?.id))
+                .addAction(getCancelAction(context, downloadState?.id))
                 .build()
     }
 
@@ -76,7 +75,6 @@ internal object DownloadNotification {
      * Build the notification to be displayed when a download finishes.
      */
     fun createDownloadCompletedNotification(context: Context, fileName: String?): Notification {
-        // TODO: Pass downloadState in here?
         val channelId = ensureChannelExists(context)
         val intent = Intent(ACTION_VIEW_DOWNLOADS).apply {
             flags = FLAG_ACTIVITY_NEW_TASK
@@ -153,10 +151,9 @@ internal object DownloadNotification {
         return NOTIFICATION_CHANNEL_ID
     }
 
-    private fun getPauseAction(context: Context, downloadStateId: Long): NotificationCompat.Action {
+    private fun getPauseAction(context: Context, downloadStateId: Long?): NotificationCompat.Action {
         val pauseIntent = createPendingIntent(context, ACTION_PAUSE, downloadStateId)
 
-        // Tell us which download id to pause
         return NotificationCompat.Action.Builder(
             0,
             context.getString(R.string.mozac_feature_downloads_button_pause),
@@ -164,7 +161,7 @@ internal object DownloadNotification {
         ).build()
     }
 
-    private fun getResumeAction(context: Context, downloadStateId: Long): NotificationCompat.Action {
+    private fun getResumeAction(context: Context, downloadStateId: Long?): NotificationCompat.Action {
         val resumeIntent = createPendingIntent(context, ACTION_RESUME, downloadStateId)
 
         return NotificationCompat.Action.Builder(
@@ -174,7 +171,7 @@ internal object DownloadNotification {
         ).build()
     }
 
-    private fun getCancelAction(context: Context, downloadStateId: Long): NotificationCompat.Action {
+    private fun getCancelAction(context: Context, downloadStateId: Long?): NotificationCompat.Action {
         val cancelIntent = createPendingIntent(context, ACTION_CANCEL, downloadStateId)
 
         return NotificationCompat.Action.Builder(
@@ -184,16 +181,17 @@ internal object DownloadNotification {
         ).build()
     }
 
-    private fun createPendingIntent(context: Context, action: String, downloadStateId: Long): PendingIntent {
+    private fun createPendingIntent(context: Context, action: String, downloadStateId: Long?): PendingIntent {
         val intent = Intent(action)
         intent.setPackage(context.applicationContext.packageName)
 
         val bundleExtra = Bundle()
-        bundleExtra.putLong(EXTRA_DOWNLOAD_ID, downloadStateId)
+        // TODO: What's the best way to handle a null ID here...?
+        bundleExtra.putLong(EXTRA_DOWNLOAD_ID, downloadStateId ?: -1)
         intent.putExtras(bundleExtra)
 
-        // Need distinct PendingIntent objects: https://developer.android.com/reference/android/app/PendingIntent.html
-        // TODO: Might need to "save" the bundle data somehow when the notification is created... it only seems to persist the most recent intent's bundle data
+        // We generate a random requestCode in order to generate a distinct PendingIntent:
+        // https://developer.android.com/reference/android/app/PendingIntent.html
         return PendingIntent.getBroadcast(context.applicationContext, Random.nextInt(), intent, 0)
     }
 }
