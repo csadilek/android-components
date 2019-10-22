@@ -111,6 +111,19 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
                         currentDownloadJobState.status = DownloadJobStatus.ACTIVE
                         displayOngoingDownloadNotification(currentDownloadJobState.state)
                     }
+                    ACTION_OPEN -> {
+                        // Create a new file with the location of the saved file to extract the correct path
+                        // `file` has the wrong path, so we must construct it based on the `fileName` and `dir.path`s
+                        val fileLocation = File(currentDownloadJobState.state.filePath ?: "")
+                        val filePath = FileProvider.getUriForFile(context, context.packageName + FILE_PROVIDER_EXTENSION, fileLocation)
+
+                        val newIntent = Intent(ACTION_VIEW).apply {
+                            data = filePath
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        }
+
+                        startActivity(newIntent)
+                    }
                 }
             }
         }
@@ -150,7 +163,7 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
                     DownloadNotification.createPausedDownloadNotification(context, download)
                 } else {
                     tag = listOfDownloadJobs[download.id]?.foregroundServiceId?.toString()!!
-                    DownloadNotification.createDownloadCompletedNotification(context, download.fileName)
+                    DownloadNotification.createDownloadCompletedNotification(context, download)
                 }
             } catch (e: IOException) {
                 tag = listOfDownloadJobs[download.id]?.foregroundServiceId?.toString()!!
@@ -173,6 +186,7 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
             addAction(ACTION_RESUME)
             addAction(ACTION_CANCEL)
             addAction(ACTION_TRY_AGAIN)
+            addAction(ACTION_OPEN)
         }
 
         context.registerReceiver(broadcastReceiver, filter)
@@ -312,26 +326,17 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
             referer = download.referrerUrl?.toUri()
         )
 
-        // Create a new file with the location of the saved file to extract the correct path
-        // `file` has the wrong path, so we must construct it based on the `fileName` and `dir.path`
-        val fileLocation = File(dir.path + "/" + download.fileName)
-
-        val filePath = FileProvider.getUriForFile(context, context.packageName + FILE_PROVIDER_EXTENSION, fileLocation)
-
-        val newIntent = Intent(ACTION_VIEW).apply {
-            data = filePath
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
-        }
-
-        startActivity(newIntent)
+        download.filePath = dir.path + "/" + download.fileName
     }
 
     companion object {
+        private const val FILE_PROVIDER_EXTENSION = ".fileprovider"
+
+        const val ACTION_OPEN = "mozilla.components.feature.downloads.OPEN"
         const val ACTION_PAUSE = "mozilla.components.feature.downloads.PAUSE"
         const val ACTION_RESUME = "mozilla.components.feature.downloads.RESUME"
         const val ACTION_CANCEL = "mozilla.components.feature.downloads.CANCEL"
         const val ACTION_TRY_AGAIN = "mozilla.components.feature.downloads.TRY_AGAIN"
         const val chunkSize = 4 * 1024
-        private val FILE_PROVIDER_EXTENSION = ".fileprovider"
     }
 }

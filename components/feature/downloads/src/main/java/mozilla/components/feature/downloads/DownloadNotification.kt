@@ -26,6 +26,7 @@ import androidx.core.content.FileProvider
 import androidx.core.content.getSystemService
 import mozilla.components.browser.state.state.content.DownloadState
 import mozilla.components.feature.downloads.AbstractFetchDownloadService.Companion.ACTION_CANCEL
+import mozilla.components.feature.downloads.AbstractFetchDownloadService.Companion.ACTION_OPEN
 import mozilla.components.feature.downloads.AbstractFetchDownloadService.Companion.ACTION_PAUSE
 import mozilla.components.feature.downloads.AbstractFetchDownloadService.Companion.ACTION_RESUME
 import mozilla.components.feature.downloads.AbstractFetchDownloadService.Companion.ACTION_TRY_AGAIN
@@ -35,6 +36,7 @@ import kotlin.random.Random
 internal object DownloadNotification {
 
     private const val NOTIFICATION_CHANNEL_ID = "Downloads"
+
     internal const val EXTRA_DOWNLOAD_ID = "downloadId"
 
     /**
@@ -81,20 +83,15 @@ internal object DownloadNotification {
     /**
      * Build the notification to be displayed when a download finishes.
      */
-    fun createDownloadCompletedNotification(context: Context, fileName: String?): Notification {
+    fun createDownloadCompletedNotification(context: Context, downloadState: DownloadState?): Notification {
         val channelId = ensureChannelExists(context)
-        val intent = Intent(ACTION_VIEW_DOWNLOADS).apply {
-            flags = FLAG_ACTIVITY_NEW_TASK
-        }
-
-        // TODO: Launch the file
 
         return NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.mozac_feature_download_ic_download)
-            .setContentTitle(fileName)
+            .setContentTitle(downloadState?.fileName)
             .setContentText(context.getString(R.string.mozac_feature_downloads_completed_notification_text2))
             .setColor(ContextCompat.getColor(context, R.color.mozac_feature_downloads_notification))
-            .setContentIntent(PendingIntent.getActivity(context, 0, intent, 0))
+            .setContentIntent(createPendingIntent(context, ACTION_OPEN, downloadState?.id))
             .build()
     }
 
