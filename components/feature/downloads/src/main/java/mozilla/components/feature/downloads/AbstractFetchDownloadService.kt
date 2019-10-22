@@ -5,13 +5,16 @@
 package mozilla.components.feature.downloads
 
 import android.annotation.TargetApi
+import android.app.DownloadManager
 import android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE
 import android.app.DownloadManager.EXTRA_DOWNLOAD_ID
 import android.content.BroadcastReceiver
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.ACTION_VIEW
 import android.content.IntentFilter
+import android.net.Uri
 import android.os.Build
 import android.os.Build.VERSION.SDK_INT
 import android.os.Environment
@@ -21,6 +24,7 @@ import android.provider.MediaStore
 import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import kotlinx.coroutines.CoroutineScope
@@ -306,6 +310,23 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
             uri = download.url.toUri(),
             referer = download.referrerUrl?.toUri()
         )
+
+
+        Log.d("Sawyer", "uri: " + (Uri.parse("content://" + file.path)))
+        Log.d("Sawyer", "contentType: " + (download.contentType))
+
+        // TODO: Open the downloaded file
+        /*
+        val newIntent = Intent(ACTION_VIEW).apply {
+            data =  Uri.parse("content://" + file.path)
+            Log.d("Sawyer", "data: " + data)
+           // data = (Uri.fromFile(file))
+            //type = download.contentType
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+
+        startActivity(Intent.createChooser(newIntent, "Open with").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        */
     }
 
     companion object {
