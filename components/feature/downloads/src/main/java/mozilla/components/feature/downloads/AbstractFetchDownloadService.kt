@@ -12,6 +12,7 @@ import android.content.BroadcastReceiver
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.ACTION_GET_CONTENT
 import android.content.Intent.ACTION_VIEW
 import android.content.IntentFilter
 import android.net.Uri
@@ -311,22 +312,18 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
             referer = download.referrerUrl?.toUri()
         )
 
+        // Create a new file with the location of the saved file to extract the correct path
+        // `file` has the wrong path, so we must construct it based on the `fileName` and `dir.path`
+        val fileLocation = File(dir.path + "/" + download.fileName)
 
-        Log.d("Sawyer", "uri: " + (Uri.parse("content://" + file.path)))
-        Log.d("Sawyer", "contentType: " + (download.contentType))
+        val filePath = FileProvider.getUriForFile(context, context.packageName + FILE_PROVIDER_EXTENSION, fileLocation)
 
-        // TODO: Open the downloaded file
-        /*
         val newIntent = Intent(ACTION_VIEW).apply {
-            data =  Uri.parse("content://" + file.path)
-            Log.d("Sawyer", "data: " + data)
-           // data = (Uri.fromFile(file))
-            //type = download.contentType
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            data = filePath
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
         }
 
-        startActivity(Intent.createChooser(newIntent, "Open with").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        */
+        startActivity(newIntent)
     }
 
     companion object {
@@ -335,5 +332,6 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
         const val ACTION_CANCEL = "mozilla.components.feature.downloads.CANCEL"
         const val ACTION_TRY_AGAIN = "mozilla.components.feature.downloads.TRY_AGAIN"
         const val chunkSize = 4 * 1024
+        private val FILE_PROVIDER_EXTENSION = ".fileprovider"
     }
 }

@@ -180,7 +180,7 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
                         putInt(KEY_POSITIVE_BUTTON_TEXT_COLOR, this)
                     }
 
-                    positiveButtonRadius?.apply{
+                    positiveButtonRadius?.apply {
                         putFloat(KEY_POSITIVE_BUTTON_RADIUS, this)
                     }
                 }
