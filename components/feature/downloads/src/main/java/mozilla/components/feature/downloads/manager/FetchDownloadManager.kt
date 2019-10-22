@@ -38,7 +38,7 @@ class FetchDownloadManager<T : AbstractFetchDownloadService>(
     override var onDownloadCompleted: OnDownloadCompleted = noop
 ) : BroadcastReceiver(), DownloadManager {
 
-    private val queuedDownloads = LongSparseArray<DownloadState>()
+    private val queuedDownloads = HashMap<String, DownloadState>()
     private var isSubscribedReceiver = false
 
     override val permissions = if (SDK_INT >= P) {
@@ -53,7 +53,7 @@ class FetchDownloadManager<T : AbstractFetchDownloadService>(
      * @param cookie any additional cookie to add as part of the download request.
      * @return the id reference of the scheduled download.
      */
-    override fun download(download: DownloadState, cookie: String): Long? {
+    override fun download(download: DownloadState, cookie: String): String? {
         if (!download.isScheme(listOf("http", "https"))) {
             // We are ignoring everything that is not http or https. This is a limitation of
             // GeckoView: https://bugzilla.mozilla.org/show_bug.cgi?id=1501735 and
@@ -100,7 +100,7 @@ class FetchDownloadManager<T : AbstractFetchDownloadService>(
     override fun onReceive(context: Context, intent: Intent) {
         if (queuedDownloads.isEmpty()) unregisterListeners()
 
-        val downloadID = intent.getLongExtra(EXTRA_DOWNLOAD_ID, -1)
+        val downloadID = intent.getStringExtra(EXTRA_DOWNLOAD_ID) ?: ""
         val download = queuedDownloads[downloadID]
 
         if (download != null) {

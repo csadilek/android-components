@@ -8,7 +8,7 @@ import android.content.Context
 import mozilla.components.browser.state.state.content.DownloadState
 import mozilla.components.support.ktx.android.content.isPermissionGranted
 
-typealias OnDownloadCompleted = (DownloadState, Long) -> Unit
+typealias OnDownloadCompleted = (DownloadState, String) -> Unit
 
 interface DownloadManager {
 
@@ -25,7 +25,7 @@ interface DownloadManager {
     fun download(
         download: DownloadState,
         cookie: String = ""
-    ): Long?
+    ): String?
 
     fun unregisterListeners() = Unit
 }

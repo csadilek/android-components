@@ -62,7 +62,7 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
     @VisibleForTesting
     internal val context: Context get() = this
 
-    private var listOfDownloadJobs = mutableMapOf<Long, DownloadJobState>()
+    private var listOfDownloadJobs = mutableMapOf<String, DownloadJobState>()
 
     // TODO: Can this be simplified/refactored?
     data class DownloadJobState(
@@ -77,7 +77,7 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
     private val broadcastReceiver by lazy {
         object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent?) {
-                val downloadId = intent?.extras?.getLong(DownloadNotification.EXTRA_DOWNLOAD_ID) ?: return
+                val downloadId = intent?.extras?.getString(DownloadNotification.EXTRA_DOWNLOAD_ID) ?: return
                 val currentDownloadJobState = listOfDownloadJobs[downloadId] ?: return
 
                 when (intent.action) {
@@ -235,7 +235,7 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
      * Informs [mozilla.components.feature.downloads.manager.FetchDownloadManager] that a download
      * has been completed.
      */
-    private fun sendDownloadCompleteBroadcast(downloadID: Long) {
+    private fun sendDownloadCompleteBroadcast(downloadID: String) {
         val intent = Intent(ACTION_DOWNLOAD_COMPLETE)
         intent.putExtra(EXTRA_DOWNLOAD_ID, downloadID)
         broadcastManager.sendBroadcast(intent)
