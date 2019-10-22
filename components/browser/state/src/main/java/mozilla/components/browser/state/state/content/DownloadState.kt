@@ -6,7 +6,6 @@ package mozilla.components.browser.state.state.content
 
 import android.os.Environment
 import java.io.OutputStream
-import java.util.*
 import kotlin.random.Random
 
 /**
@@ -30,5 +29,5 @@ data class DownloadState(
     val destinationDirectory: String = Environment.DIRECTORY_DOWNLOADS,
     val referrerUrl: String? = null,
     val skipConfirmation: Boolean = false,
-    val id: String = UUID.randomUUID().toString()
+    val id: Long = Random.nextLong()
 )
