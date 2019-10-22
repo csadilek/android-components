@@ -5,17 +5,14 @@
 package mozilla.components.feature.downloads
 
 import android.annotation.TargetApi
-import android.app.DownloadManager
 import android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE
 import android.app.DownloadManager.EXTRA_DOWNLOAD_ID
 import android.content.BroadcastReceiver
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
-import android.content.Intent.ACTION_GET_CONTENT
 import android.content.Intent.ACTION_VIEW
 import android.content.IntentFilter
-import android.net.Uri
 import android.os.Build
 import android.os.Build.VERSION.SDK_INT
 import android.os.Environment

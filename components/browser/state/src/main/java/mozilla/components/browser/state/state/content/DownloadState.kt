@@ -5,7 +5,6 @@
 package mozilla.components.browser.state.state.content
 
 import android.os.Environment
-import java.io.OutputStream
 import kotlin.random.Random
 
 /**
