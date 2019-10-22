@@ -190,9 +190,9 @@ internal object DownloadNotification {
         val tryAgainIntent = createPendingIntent(context, ACTION_TRY_AGAIN, downloadStateId)
 
         return NotificationCompat.Action.Builder(
-                0,
-                context.getString(R.string.mozac_feature_downloads_button_try_again),
-                tryAgainIntent
+            0,
+            context.getString(R.string.mozac_feature_downloads_button_try_again),
+            tryAgainIntent
         ).build()
     }
 

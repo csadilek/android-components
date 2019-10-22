@@ -135,6 +135,7 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override suspend fun onStartCommand(intent: Intent?, flags: Int) {
+        Log.d("Sawyer", "onStartCommand")
         val download = intent?.getDownloadExtra() ?: return
         registerForUpdates()
 
@@ -148,6 +149,13 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
                 foregroundServiceId = foregroundServiceId,
                 status = DownloadJobStatus.ACTIVE
         )
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        listOfDownloadJobs.values.forEach {
+            it.job?.cancel()
+        }
     }
 
     private fun startDownloadJob(download: DownloadState, isResuming: Boolean): Job {
