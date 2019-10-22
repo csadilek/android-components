@@ -24,12 +24,6 @@ import kotlinx.android.synthetic.main.mozac_downloads_prompt.view.download_butto
 import mozilla.components.feature.downloads.R.string.mozac_feature_downloads_dialog_download
 import mozilla.components.feature.downloads.R.string.mozac_feature_downloads_dialog_title2
 
-private const val KEY_POSITIVE_BUTTON_BACKGROUND_COLOR = "KEY_POSITIVE_BUTTON_BACKGROUND_COLOR"
-private const val KEY_POSITIVE_BUTTON_TEXT_COLOR = "KEY_POSITIVE_BUTTON_TEXT_COLOR"
-private const val KEY_DIALOG_GRAVITY = "KEY_DIALOG_GRAVITY"
-private const val KEY_DIALOG_WIDTH_MATCH_PARENT = "KEY_DIALOG_WIDTH_MATCH_PARENT"
-private const val DEFAULT_VALUE = Int.MAX_VALUE
-
 /**
  * A confirmation dialog to be called before a download is triggered.
  * Meant to be used in collaboration with [DownloadsFeature]
@@ -181,14 +175,18 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
 
             return fragment
         }
+        
 
         const val KEY_DOWNLOAD_TEXT = "KEY_DOWNLOAD_TEXT"
-
         const val KEY_TITLE_TEXT = "KEY_TITLE_TEXT"
-
         const val KEY_THEME_ID = "KEY_THEME_ID"
-
         const val KEY_CANCELABLE = "KEY_CANCELABLE"
+
+        private const val KEY_POSITIVE_BUTTON_BACKGROUND_COLOR = "KEY_POSITIVE_BUTTON_BACKGROUND_COLOR"
+        private const val KEY_POSITIVE_BUTTON_TEXT_COLOR = "KEY_POSITIVE_BUTTON_TEXT_COLOR"
+        private const val KEY_DIALOG_GRAVITY = "KEY_DIALOG_GRAVITY"
+        private const val KEY_DIALOG_WIDTH_MATCH_PARENT = "KEY_DIALOG_WIDTH_MATCH_PARENT"
+        private const val DEFAULT_VALUE = Int.MAX_VALUE
     }
 
     private fun requireBundle(): Bundle {
