@@ -126,17 +126,12 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
         }
     }
 
-    // TODO: Do I really need to startForeground immediately? This causes double notifs to appear
-    // TODO: cc @NotWoods
-
     override fun onBind(intent: Intent?): IBinder? = null
 
     override suspend fun onStartCommand(intent: Intent?, flags: Int) {
-        Log.d("Sawyer", "onStartCommand")
         val download = intent?.getDownloadExtra() ?: return
         registerForUpdates()
 
-        // TODO: Is there a problem with using a random int for the foregroundServiceId? Could this cause collisions?
         val foregroundServiceId = Random.nextInt()
 
         // Create a new job and add it, with its downloadState to the map
@@ -161,14 +156,22 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
             val notification = try {
                 performDownload(download, isResuming)
 
-                if (listOfDownloadJobs[download.id]?.status == DownloadJobStatus.CANCELLED) { return@launch }
+                when (listOfDownloadJobs[download.id]?.status) {
+                    DownloadJobStatus.CANCELLED -> {
+                        return@launch
+                    }
 
-                if (listOfDownloadJobs[download.id]?.status == DownloadJobStatus.PAUSED) {
-                    tag = listOfDownloadJobs[download.id]?.foregroundServiceId?.toString()!!
-                    DownloadNotification.createPausedDownloadNotification(context, download)
-                } else {
-                    tag = listOfDownloadJobs[download.id]?.foregroundServiceId?.toString()!!
-                    DownloadNotification.createDownloadCompletedNotification(context, download)
+                    DownloadJobStatus.PAUSED -> {
+                        tag = listOfDownloadJobs[download.id]?.foregroundServiceId?.toString()!!
+                        DownloadNotification.createPausedDownloadNotification(context, download)
+                    }
+
+                    DownloadJobStatus.ACTIVE -> {
+                        tag = listOfDownloadJobs[download.id]?.foregroundServiceId?.toString()!!
+                        DownloadNotification.createDownloadCompletedNotification(context, download)
+                    }
+
+                    null -> { return@launch }
                 }
             } catch (e: IOException) {
                 tag = listOfDownloadJobs[download.id]?.foregroundServiceId?.toString()!!
@@ -195,11 +198,6 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
         }
 
         context.registerReceiver(broadcastReceiver, filter)
-    }
-
-    // TODO: Do I need to unregister?
-    private fun unregisterForUpdates() {
-        context.unregisterReceiver(broadcastReceiver)
     }
 
     private fun displayOngoingDownloadNotification(download: DownloadState?) {
@@ -252,9 +250,9 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
 
     private fun getHeadersFromDownload(download: DownloadState): MutableHeaders {
         return listOf(
-                CONTENT_TYPE to download.contentType,
-                CONTENT_LENGTH to download.contentLength?.toString(),
-                REFERRER to download.referrerUrl
+            CONTENT_TYPE to download.contentType,
+            CONTENT_LENGTH to download.contentLength?.toString(),
+            REFERRER to download.referrerUrl
         ).mapNotNull { (name, value) ->
             if (value.isNullOrBlank()) null else Header(name, value)
         }.toMutableHeaders()
@@ -282,22 +280,20 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
         block: (OutputStream) -> Unit
     ) {
         if (SDK_INT >= Build.VERSION_CODES.Q) {
-            useFileStreamScopedStorage(download, append, block)
+            useFileStreamScopedStorage(download, block)
         } else {
             useFileStreamLegacy(download, append, block)
         }
     }
 
     @TargetApi(Build.VERSION_CODES.Q)
-    private fun useFileStreamScopedStorage(download: DownloadState, append: Boolean, block: (OutputStream) -> Unit) {
+    private fun useFileStreamScopedStorage(download: DownloadState, block: (OutputStream) -> Unit) {
         val values = ContentValues().apply {
             put(MediaStore.Downloads.DISPLAY_NAME, download.fileName)
             put(MediaStore.Downloads.MIME_TYPE, download.contentType ?: "*/*")
             put(MediaStore.Downloads.SIZE, download.contentLength)
             put(MediaStore.Downloads.IS_PENDING, 1)
         }
-        // TODO: How do we handle the Q version...?
-        Log.d("Sawyer", "in new file stream, append: " + append)
 
         val resolver = applicationContext.contentResolver
         val collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
@@ -336,12 +332,12 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
 
     companion object {
         private const val FILE_PROVIDER_EXTENSION = ".fileprovider"
+        private const val chunkSize = 4 * 1024
 
         const val ACTION_OPEN = "mozilla.components.feature.downloads.OPEN"
         const val ACTION_PAUSE = "mozilla.components.feature.downloads.PAUSE"
         const val ACTION_RESUME = "mozilla.components.feature.downloads.RESUME"
         const val ACTION_CANCEL = "mozilla.components.feature.downloads.CANCEL"
         const val ACTION_TRY_AGAIN = "mozilla.components.feature.downloads.TRY_AGAIN"
-        const val chunkSize = 4 * 1024
     }
 }

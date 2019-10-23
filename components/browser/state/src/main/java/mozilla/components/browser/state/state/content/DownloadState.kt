@@ -16,7 +16,9 @@ import kotlin.random.Random
  * @property contentLength The file size reported by the server.
  * @property userAgent The user agent to be used for the download.
  * @property destinationDirectory The matching destination directory for this type of download.
+ * @property filePath The file path the file was saved at.
  * @property referrerUrl The site that linked to this download.
+ * @property skipConfirmation Whether or not the confirmation dialog should be shown before the download begins.
  * @property id The unique identifier of this download.
  */
 data class DownloadState(
