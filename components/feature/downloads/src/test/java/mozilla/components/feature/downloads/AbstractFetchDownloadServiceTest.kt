@@ -23,6 +23,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.Mock
 import org.mockito.Mockito.doNothing
 import org.mockito.Mockito.doReturn
@@ -57,21 +58,21 @@ class AbstractFetchDownloadServiceTest {
             Response.Body(mock())
         )
         doReturn(response).`when`(client).fetch(Request("https://example.com/file.txt"))
-        doNothing().`when`(service).useFileStream(any(), any())
+        doNothing().`when`(service).useFileStream(any(), anyBoolean(), any())
 
         val downloadIntent = Intent("ACTION_DOWNLOAD").apply {
             putExtra(EXTRA_DOWNLOAD_ID, 1L)
             putDownloadExtra(download)
         }
 
-        service.onStartCommand(downloadIntent, 0)
+        service.onStartCommand(downloadIntent, 0, 0)
 
         val providedDownload = argumentCaptor<DownloadState>()
-        verify(service).useFileStream(providedDownload.capture(), any())
+
+        verify(service).performDownload(providedDownload.capture(), anyBoolean())
         assertEquals(download.url, providedDownload.value.url)
         assertEquals(download.fileName, providedDownload.value.fileName)
 
-        verify(broadcastManager).sendBroadcast(any())
         Unit
     }
 }

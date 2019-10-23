@@ -146,7 +146,6 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
             @StringRes dialogTitleText: Int = R.string.mozac_feature_downloads_dialog_title2,
             @StringRes downloadButtonText: Int = mozac_feature_downloads_dialog_download,
             @StyleRes themeResId: Int = 0,
-            cancelable: Boolean = false,
             promptsStyling: DownloadsFeature.PromptsStyling? = null
         ): SimpleDownloadDialogFragment {
             val fragment = SimpleDownloadDialogFragment()
@@ -156,7 +155,6 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
                 putInt(KEY_DOWNLOAD_TEXT, downloadButtonText)
                 putInt(KEY_THEME_ID, themeResId)
                 putInt(KEY_TITLE_TEXT, dialogTitleText)
-                putBoolean(KEY_CANCELABLE, cancelable)
 
                 promptsStyling?.apply {
                     putInt(KEY_DIALOG_GRAVITY, gravity)
@@ -186,7 +184,6 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
         // WARNING: If KEY_CONTENT_LENGTH is <= 0, this will be overriden with the default string "Download"
         const val KEY_TITLE_TEXT = "KEY_TITLE_TEXT"
         const val KEY_THEME_ID = "KEY_THEME_ID"
-        const val KEY_CANCELABLE = "KEY_CANCELABLE"
 
         private const val KEY_POSITIVE_BUTTON_BACKGROUND_COLOR = "KEY_POSITIVE_BUTTON_BACKGROUND_COLOR"
         private const val KEY_POSITIVE_BUTTON_TEXT_COLOR = "KEY_POSITIVE_BUTTON_TEXT_COLOR"

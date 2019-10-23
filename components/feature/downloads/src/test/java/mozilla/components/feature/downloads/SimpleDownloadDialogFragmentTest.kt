@@ -6,16 +6,23 @@ package mozilla.components.feature.downloads
 
 import android.app.Application
 import android.content.DialogInterface.BUTTON_POSITIVE
+import android.graphics.drawable.GradientDrawable
+import android.view.Gravity
+import android.view.ViewGroup
+import android.widget.Button
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.browser.state.state.content.DownloadState
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
@@ -61,6 +68,37 @@ class SimpleDownloadDialogFragmentTest {
         val negativeButton = (alert as AlertDialog).getButton(buttonID)
 
         negativeButton.performClick()
+    }
+
+    @Test
+    fun `dialog must adhere to promptsStyling`() {
+        val promptsStyling = DownloadsFeature.PromptsStyling(
+                gravity = Gravity.TOP,
+                shouldWidthMatchParent = true,
+                positiveButtonBackgroundColor = android.R.color.white,
+                positiveButtonTextColor = android.R.color.black,
+                positiveButtonRadius = 4f
+        )
+
+        val fragment = Mockito.spy(
+                SimpleDownloadDialogFragment.newInstance(
+                        R.string.mozac_feature_downloads_dialog_title2,
+                        R.string.mozac_feature_downloads_dialog_download,
+                        0,
+                        promptsStyling
+                )
+        )
+        Mockito.doReturn(testContext).`when`(fragment).requireContext()
+
+        val dialog = fragment.onCreateDialog(null)
+        val dialogAttributes = dialog.window!!.attributes
+        val positiveButton = dialog.findViewById<Button>(R.id.download_button)
+
+        assertEquals(ContextCompat.getColor(testContext, promptsStyling.positiveButtonBackgroundColor!!), (positiveButton.background as GradientDrawable).color?.defaultColor)
+        assertEquals(promptsStyling.positiveButtonRadius!!, (positiveButton.background as GradientDrawable).cornerRadius)
+        assertEquals(ContextCompat.getColor(testContext, promptsStyling.positiveButtonTextColor!!), positiveButton.textColors.defaultColor)
+        assertTrue(dialogAttributes.gravity == Gravity.TOP)
+        assertTrue(dialogAttributes.width == ViewGroup.LayoutParams.MATCH_PARENT)
     }
 }
 

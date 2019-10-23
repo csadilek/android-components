@@ -61,12 +61,7 @@ class DownloadsFeature(
     private val downloadManager: DownloadManager = AndroidDownloadManager(applicationContext),
     private val customTabId: String? = null,
     private val fragmentManager: FragmentManager? = null,
-        // TODO: Change this prompt style to be null, this is just for testing purposes
-    var promptsStyling: PromptsStyling? = PromptsStyling(Gravity.BOTTOM,
-            true,
-            android.R.color.holo_blue_dark,
-            android.R.color.white
-    ),
+    private val promptsStyling: PromptsStyling? = null,
     @VisibleForTesting(otherwise = PRIVATE)
 internal var dialog: DownloadDialogFragment = SimpleDownloadDialogFragment.newInstance(
         promptsStyling = promptsStyling

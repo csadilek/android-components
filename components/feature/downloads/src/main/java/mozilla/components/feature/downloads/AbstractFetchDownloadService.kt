@@ -203,7 +203,7 @@ abstract class AbstractFetchDownloadService : Service() {
         context.registerReceiver(broadcastReceiver, filter)
     }
 
-    private fun displayOngoingDownloadNotification(download: DownloadState) {
+    internal fun displayOngoingDownloadNotification(download: DownloadState) {
         val ongoingDownloadNotification = DownloadNotification.createOngoingDownloadNotification(
             context,
             download
@@ -216,7 +216,7 @@ abstract class AbstractFetchDownloadService : Service() {
         )
     }
 
-    private fun performDownload(download: DownloadState, isResuming: Boolean) {
+    internal fun performDownload(download: DownloadState, isResuming: Boolean) {
         val headers = getHeadersFromDownload(download)
         val request = Request(download.url, headers = headers)
         val response = httpClient.fetch(request)
@@ -236,7 +236,7 @@ abstract class AbstractFetchDownloadService : Service() {
         }
     }
 
-    private fun copyInChunks(downloadJobState: DownloadJobState, inStream: InputStream, outStream: OutputStream) {
+    internal fun copyInChunks(downloadJobState: DownloadJobState, inStream: InputStream, outStream: OutputStream) {
         // To ensure that we copy all files (even ones that don't have fileSize, we must NOT check < fileSize
         while (downloadJobState.status == DownloadJobStatus.ACTIVE) {
             val data = ByteArray(chunkSize)
