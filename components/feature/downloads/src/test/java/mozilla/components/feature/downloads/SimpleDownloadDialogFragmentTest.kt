@@ -5,14 +5,13 @@
 package mozilla.components.feature.downloads
 
 import android.app.Application
-import android.content.DialogInterface.BUTTON_POSITIVE
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.Button
-import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.FragmentTransaction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.browser.state.state.content.DownloadState
 import mozilla.components.support.test.mock
@@ -52,22 +51,21 @@ class SimpleDownloadDialogFragmentTest {
             isOnStartDownloadCalled = true
         }
 
-        dialog.onStartDownload = onStartDownload
-        dialog.testingContext = testContext
+        val fragment = Mockito.spy(SimpleDownloadDialogFragment.newInstance())
 
-        performClick(BUTTON_POSITIVE)
+        fragment.onStartDownload = onStartDownload
+        fragment.testingContext = testContext
+
+        Mockito.doReturn(testContext).`when`(fragment).requireContext()
+        Mockito.doReturn(mockFragmentManager()).`when`(fragment).fragmentManager
+
+        val downloadDialog = fragment.onCreateDialog(null)
+        downloadDialog.show()
+
+        val positiveButton = downloadDialog.findViewById<Button>(R.id.download_button)
+        positiveButton.performClick()
 
         assertTrue(isOnStartDownloadCalled)
-    }
-
-    private fun performClick(buttonID: Int) {
-        val alert = dialog.onCreateDialog(null)
-
-        alert.show()
-
-        val negativeButton = (alert as AlertDialog).getButton(buttonID)
-
-        negativeButton.performClick()
     }
 
     @Test
@@ -99,6 +97,13 @@ class SimpleDownloadDialogFragmentTest {
         assertEquals(ContextCompat.getColor(testContext, promptsStyling.positiveButtonTextColor!!), positiveButton.textColors.defaultColor)
         assertTrue(dialogAttributes.gravity == Gravity.TOP)
         assertTrue(dialogAttributes.width == ViewGroup.LayoutParams.MATCH_PARENT)
+    }
+
+    private fun mockFragmentManager(): FragmentManager {
+        val fragmentManager: FragmentManager = mock()
+        val transaction: FragmentTransaction = mock()
+        Mockito.doReturn(transaction).`when`(fragmentManager).beginTransaction()
+        return fragmentManager
     }
 }
 

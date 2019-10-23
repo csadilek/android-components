@@ -21,8 +21,6 @@ import androidx.core.content.ContextCompat
 import kotlinx.android.synthetic.main.mozac_downloads_prompt.*
 import kotlinx.android.synthetic.main.mozac_downloads_prompt.view.*
 import kotlinx.android.synthetic.main.mozac_downloads_prompt.view.download_button
-import mozilla.components.feature.downloads.R.string.mozac_feature_downloads_dialog_download
-import mozilla.components.feature.downloads.R.string.mozac_feature_downloads_dialog_title2
 import android.graphics.drawable.GradientDrawable
 
 /**
@@ -84,10 +82,10 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
 
         with(requireBundle()) {
             rootView.title.text = if (getLong(KEY_CONTENT_LENGTH) <= 0L) {
-                getString(mozac_feature_downloads_dialog_download)
+                getString(R.string.mozac_feature_downloads_dialog_download)
             } else {
                 val contentSize = getLong(KEY_CONTENT_LENGTH).toMegabyteString()
-                getString(getInt(KEY_TITLE_TEXT, mozac_feature_downloads_dialog_title2), contentSize)
+                getString(getInt(KEY_TITLE_TEXT, R.string.mozac_feature_downloads_dialog_title2), contentSize)
             }
 
             if (positiveButtonBackgroundColor != DEFAULT_VALUE) {
@@ -116,7 +114,7 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
 
             rootView.filename.text = getString(KEY_FILE_NAME, "")
             rootView.download_button.text = getString(
-                    getInt(KEY_DOWNLOAD_TEXT, mozac_feature_downloads_dialog_download)
+                    getInt(KEY_DOWNLOAD_TEXT, R.string.mozac_feature_downloads_dialog_download)
             )
 
             rootView.close_button.setOnClickListener {
@@ -151,8 +149,8 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
          * A builder method for creating a [SimpleDownloadDialogFragment]
          */
         fun newInstance(
-            @StringRes dialogTitleText: Int = mozac_feature_downloads_dialog_title2,
-            @StringRes downloadButtonText: Int = mozac_feature_downloads_dialog_download,
+            @StringRes dialogTitleText: Int = R.string.mozac_feature_downloads_dialog_title2,
+            @StringRes downloadButtonText: Int = R.string.mozac_feature_downloads_dialog_download,
             @StyleRes themeResId: Int = 0,
             promptsStyling: DownloadsFeature.PromptsStyling? = null
         ): SimpleDownloadDialogFragment {
