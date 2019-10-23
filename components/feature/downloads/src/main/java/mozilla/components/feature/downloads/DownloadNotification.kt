@@ -53,7 +53,7 @@ internal object DownloadNotification {
     }
 
     /**
-     * Build the notification to be displayed while the download service is active.
+     * Build the notification to be displayed while the download service is paused.
      */
     fun createPausedDownloadNotification(context: Context, downloadState: DownloadState): Notification {
         val channelId = ensureChannelExists(context)
@@ -81,7 +81,7 @@ internal object DownloadNotification {
             .setContentTitle(downloadState.fileName)
             .setContentText(context.getString(R.string.mozac_feature_downloads_completed_notification_text2))
             .setColor(ContextCompat.getColor(context, R.color.mozac_feature_downloads_notification))
-            .setContentIntent(createPendingIntent(context, ACTION_OPEN, downloadState?.id))
+            .setContentIntent(createPendingIntent(context, ACTION_OPEN, downloadState.id))
             .build()
     }
 
@@ -189,10 +189,7 @@ internal object DownloadNotification {
     private fun createPendingIntent(context: Context, action: String, downloadStateId: Long): PendingIntent {
         val intent = Intent(action)
         intent.setPackage(context.applicationContext.packageName)
-
-        val bundleExtra = Bundle()
-        bundleExtra.putLong(EXTRA_DOWNLOAD_ID, downloadStateId)
-        intent.putExtras(bundleExtra)
+        intent.putExtra(EXTRA_DOWNLOAD_ID, downloadStateId)
 
         // We generate a random requestCode in order to generate a distinct PendingIntent:
         // https://developer.android.com/reference/android/app/PendingIntent.html

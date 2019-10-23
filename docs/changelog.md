@@ -41,6 +41,16 @@ permalink: /changelog/
 * **feature-push**
   * The `AutoPushFeature` now checks (once every 24 hours) to verify and renew push subscriptions if expired after a cold boot.
   
+* **feature-downloads**
+  * Added ability to pause, resume, cancel, and try again on a download through the `DownloadNotification`.
+  * Added support for multiple, continuous downloads.
+  * Added size of the file to the `DownloadNotification`.
+  * Added open file funcitonality to the `DownloadNotification`.
+      * Note: you must add a `FileProvider` to your manifest as well as `file_paths.xml`. See SampleBrowser for an example.
+      * To open .apk files, you must still add the permisison `android.permission.INSTALL_PACKAGES` to your manifest.
+  * Improved visuals of `SimpleDownloadDialogFragment` to better match `SitePermissionsDialogFragment`.
+      * `SimpleDownloadDialogFragment` can similarly be themed by using `PromptsStyling` properties.
+
 # 18.0.0
 
 * [Commits](https://github.com/mozilla-mobile/android-components/compare/v17.0.0...v18.0.0)

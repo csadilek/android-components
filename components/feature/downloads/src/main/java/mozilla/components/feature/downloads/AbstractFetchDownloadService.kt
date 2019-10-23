@@ -137,10 +137,10 @@ abstract class AbstractFetchDownloadService : Service() {
 
         // Create a new job and add it, with its downloadState to the map
         listOfDownloadJobs[download.id] = DownloadJobState(
-                job = startDownloadJob(download, false),
-                state = download,
-                foregroundServiceId = foregroundServiceId,
-                status = DownloadJobStatus.ACTIVE
+            job = startDownloadJob(download, false),
+            state = download,
+            foregroundServiceId = foregroundServiceId,
+            status = DownloadJobStatus.ACTIVE
         )
 
         return super.onStartCommand(intent, flags, startId)
