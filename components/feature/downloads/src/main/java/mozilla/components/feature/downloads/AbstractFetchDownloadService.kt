@@ -20,7 +20,6 @@ import android.os.Environment
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
-import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
@@ -57,6 +56,7 @@ import kotlin.random.Random
  *
  * To use this service, you must create a subclass in your application and it to the manifest.
  */
+@Suppress("TooManyFunctions", "LargeClass")
 abstract class AbstractFetchDownloadService : Service() {
 
     protected abstract val httpClient: Client
@@ -67,7 +67,7 @@ abstract class AbstractFetchDownloadService : Service() {
 
     private var listOfDownloadJobs = mutableMapOf<Long, DownloadJobState>()
 
-    data class DownloadJobState(
+    private data class DownloadJobState(
         var job: Job? = null,
         var state: DownloadState,
         var currentBytesCopied: Long = 0,
@@ -75,7 +75,7 @@ abstract class AbstractFetchDownloadService : Service() {
         var foregroundServiceId: Int = 0
     )
 
-    enum class DownloadJobStatus {
+    private enum class DownloadJobStatus {
         ACTIVE,
         PAUSED,
         CANCELLED
@@ -84,7 +84,8 @@ abstract class AbstractFetchDownloadService : Service() {
     private val broadcastReceiver by lazy {
         object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent?) {
-                val downloadId = intent?.extras?.getLong(DownloadNotification.EXTRA_DOWNLOAD_ID) ?: return
+                val downloadId =
+                        intent?.extras?.getLong(DownloadNotification.EXTRA_DOWNLOAD_ID) ?: return
                 val currentDownloadJobState = listOfDownloadJobs[downloadId] ?: return
 
                 when (intent.action) {
@@ -102,7 +103,9 @@ abstract class AbstractFetchDownloadService : Service() {
                     ACTION_CANCEL -> {
                         currentDownloadJobState.status = DownloadJobStatus.CANCELLED
                         currentDownloadJobState.job?.cancel()
-                        NotificationManagerCompat.from(context).cancel(context, currentDownloadJobState.foregroundServiceId.toString())
+                        NotificationManagerCompat.from(context).cancel(context,
+                                currentDownloadJobState.foregroundServiceId.toString()
+                        )
                     }
                     ACTION_TRY_AGAIN -> {
                         currentDownloadJobState.job = startDownloadJob(currentDownloadJobState.state, false)
@@ -113,7 +116,11 @@ abstract class AbstractFetchDownloadService : Service() {
                         // Create a new file with the location of the saved file to extract the correct path
                         // `file` has the wrong path, so we must construct it based on the `fileName` and `dir.path`s
                         val fileLocation = File(currentDownloadJobState.state.filePath ?: "")
-                        val filePath = FileProvider.getUriForFile(context, context.packageName + FILE_PROVIDER_EXTENSION, fileLocation)
+                        val filePath = FileProvider.getUriForFile(
+                                context,
+                                context.packageName + FILE_PROVIDER_EXTENSION,
+                                fileLocation
+                        )
 
                         val newIntent = Intent(ACTION_VIEW).apply {
                             setDataAndType(filePath, currentDownloadJobState.state.contentType ?: "*/*")
@@ -236,7 +243,7 @@ abstract class AbstractFetchDownloadService : Service() {
         }
     }
 
-    internal fun copyInChunks(downloadJobState: DownloadJobState, inStream: InputStream, outStream: OutputStream) {
+    private fun copyInChunks(downloadJobState: DownloadJobState, inStream: InputStream, outStream: OutputStream) {
         // To ensure that we copy all files (even ones that don't have fileSize, we must NOT check < fileSize
         while (downloadJobState.status == DownloadJobStatus.ACTIVE) {
             val data = ByteArray(chunkSize)

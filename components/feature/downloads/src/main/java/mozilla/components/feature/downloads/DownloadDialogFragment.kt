@@ -59,6 +59,6 @@ abstract class DownloadDialogFragment : AppCompatDialogFragment() {
     }
 }
 
-fun Long.toMegabyteString(): String {
+internal fun Long.toMegabyteString(): String {
     return String.format("%.2f MB", this / MEGABYTE)
 }

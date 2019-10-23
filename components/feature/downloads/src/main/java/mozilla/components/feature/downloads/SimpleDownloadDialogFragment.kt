@@ -91,7 +91,10 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
             }
 
             if (positiveButtonBackgroundColor != DEFAULT_VALUE) {
-                val backgroundTintList = ContextCompat.getColorStateList(requireContext(), positiveButtonBackgroundColor)
+                val backgroundTintList = ContextCompat.getColorStateList(
+                        requireContext(),
+                        positiveButtonBackgroundColor
+                )
                 rootView.download_button.backgroundTintList = backgroundTintList
             }
 
@@ -103,13 +106,18 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
             if (positiveButtonRadius != DEFAULT_VALUE.toFloat()) {
                 val shape = GradientDrawable()
                 shape.shape = GradientDrawable.RECTANGLE
-                shape.setColor(ContextCompat.getColor(requireContext(), positiveButtonBackgroundColor))
+                shape.setColor(ContextCompat.getColor(
+                        requireContext(),
+                        positiveButtonBackgroundColor
+                ))
                 shape.cornerRadius = positiveButtonRadius
                 rootView.download_button.background = shape
             }
 
             rootView.filename.text = getString(KEY_FILE_NAME, "")
-            rootView.download_button.text = getString(getInt(KEY_DOWNLOAD_TEXT, R.string.mozac_feature_downloads_dialog_download))
+            rootView.download_button.text = getString(
+                    getInt(KEY_DOWNLOAD_TEXT, mozac_feature_downloads_dialog_download)
+            )
 
             rootView.close_button.setOnClickListener {
                 dismiss()
@@ -143,7 +151,7 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
          * A builder method for creating a [SimpleDownloadDialogFragment]
          */
         fun newInstance(
-            @StringRes dialogTitleText: Int = R.string.mozac_feature_downloads_dialog_title2,
+            @StringRes dialogTitleText: Int = mozac_feature_downloads_dialog_title2,
             @StringRes downloadButtonText: Int = mozac_feature_downloads_dialog_download,
             @StyleRes themeResId: Int = 0,
             promptsStyling: DownloadsFeature.PromptsStyling? = null

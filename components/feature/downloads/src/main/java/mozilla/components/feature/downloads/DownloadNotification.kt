@@ -12,7 +12,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Build.VERSION.SDK_INT
-import android.os.Bundle
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.NotificationManagerCompat.IMPORTANCE_NONE
@@ -26,6 +25,7 @@ import mozilla.components.feature.downloads.AbstractFetchDownloadService.Compani
 import mozilla.components.feature.downloads.AbstractFetchDownloadService.Companion.ACTION_TRY_AGAIN
 import kotlin.random.Random
 
+@Suppress("TooManyFunctions")
 internal object DownloadNotification {
 
     private const val NOTIFICATION_CHANNEL_ID = "Downloads"

@@ -35,11 +35,6 @@ internal fun DownloadState.withResponse(headers: Headers, stream: InputStream?):
         contentType = headers[CONTENT_TYPE]
     }
 
-    var contentLength = this.contentLength
-    if (contentLength == null) {
-        contentLength = headers[CONTENT_LENGTH]?.toLong()
-    }
-
     return copy(
         fileName = if (fileName.isNullOrBlank()) {
             DownloadUtils.guessFileName(contentDisposition, url, contentType)

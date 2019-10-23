@@ -5,7 +5,6 @@
 package mozilla.components.feature.downloads
 
 import android.content.Context
-import android.view.Gravity
 import android.widget.Toast
 import androidx.annotation.ColorRes
 import androidx.annotation.VisibleForTesting
@@ -200,6 +199,9 @@ internal var dialog: DownloadDialogFragment = SimpleDownloadDialogFragment.newIn
         block(Pair(state, download))
     }
 
+    /**
+     * Styling for the download dialog prompt
+     */
     data class PromptsStyling(
         val gravity: Int,
         val shouldWidthMatchParent: Boolean = false,
