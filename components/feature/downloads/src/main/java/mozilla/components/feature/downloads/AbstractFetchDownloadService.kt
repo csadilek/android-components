@@ -7,6 +7,7 @@ package mozilla.components.feature.downloads
 import android.annotation.TargetApi
 import android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE
 import android.app.DownloadManager.EXTRA_DOWNLOAD_ID
+import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.ContentValues
 import android.content.Context
@@ -56,7 +57,7 @@ import kotlin.random.Random
  *
  * To use this service, you must create a subclass in your application and it to the manifest.
  */
-abstract class AbstractFetchDownloadService : CoroutineService() {
+abstract class AbstractFetchDownloadService : Service() {
 
     protected abstract val httpClient: Client
     @VisibleForTesting
@@ -115,7 +116,7 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
                         val filePath = FileProvider.getUriForFile(context, context.packageName + FILE_PROVIDER_EXTENSION, fileLocation)
 
                         val newIntent = Intent(ACTION_VIEW).apply {
-                            data = filePath
+                            setDataAndType(filePath, currentDownloadJobState.state.contentType ?: "*/*")
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
                         }
 
@@ -128,8 +129,8 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    override suspend fun onStartCommand(intent: Intent?, flags: Int) {
-        val download = intent?.getDownloadExtra() ?: return
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val download = intent?.getDownloadExtra() ?: return START_REDELIVER_INTENT
         registerForUpdates()
 
         val foregroundServiceId = Random.nextInt()
@@ -141,6 +142,8 @@ abstract class AbstractFetchDownloadService : CoroutineService() {
                 foregroundServiceId = foregroundServiceId,
                 status = DownloadJobStatus.ACTIVE
         )
+
+        return super.onStartCommand(intent, flags, startId)
     }
 
     override fun onDestroy() {
