@@ -203,7 +203,7 @@ abstract class AbstractFetchDownloadService : Service() {
         context.registerReceiver(broadcastReceiver, filter)
     }
 
-    private fun displayOngoingDownloadNotification(download: DownloadState?) {
+    private fun displayOngoingDownloadNotification(download: DownloadState) {
         val ongoingDownloadNotification = DownloadNotification.createOngoingDownloadNotification(
             context,
             download
@@ -211,7 +211,7 @@ abstract class AbstractFetchDownloadService : Service() {
 
         NotificationManagerCompat.from(context).notify(
             context,
-            listOfDownloadJobs[download?.id]?.foregroundServiceId?.toString() ?: "",
+            listOfDownloadJobs[download.id]?.foregroundServiceId?.toString() ?: "",
             ongoingDownloadNotification
         )
     }

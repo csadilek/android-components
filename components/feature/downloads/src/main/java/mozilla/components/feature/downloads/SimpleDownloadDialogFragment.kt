@@ -54,17 +54,13 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
         safeArguments.getFloat(KEY_POSITIVE_BUTTON_RADIUS, DEFAULT_VALUE.toFloat())
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        // TODO: Do I even need these separate container/dialog things?
         val sheetDialog = Dialog(requireContext())
         sheetDialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
         sheetDialog.setCanceledOnTouchOutside(true)
 
         val rootView = createContainer()
-
         sheetDialog.setContainerView(rootView)
-
         sheetDialog.window?.apply {
-
             if (dialogGravity != DEFAULT_VALUE) {
                 setGravity(dialogGravity)
             }
@@ -75,21 +71,19 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
                 setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             }
         }
-
         return sheetDialog
     }
 
     @SuppressLint("InflateParams")
     private fun createContainer(): View {
         val rootView = LayoutInflater.from(requireContext()).inflate(
-                R.layout.mozac_downloads_prompt,
-                null,
-                false
+            R.layout.mozac_downloads_prompt,
+            null,
+            false
         )
 
         with(requireBundle()) {
             rootView.title.text = if (getLong(KEY_CONTENT_LENGTH) <= 0L) {
-                // TODO: I'm ignoring the KEY_TITLE_TEXT passed in--is that an issue?
                 getString(mozac_feature_downloads_dialog_download)
             } else {
                 val contentSize = getLong(KEY_CONTENT_LENGTH).toMegabyteString()
@@ -135,11 +129,11 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
             setContentView(rootView)
         } else {
             addContentView(
-                    rootView,
-                    LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.MATCH_PARENT
-                    )
+                rootView,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT
+                )
             )
         }
     }
@@ -159,29 +153,25 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
             val arguments = fragment.arguments ?: Bundle()
 
             with(arguments) {
-
                 putInt(KEY_DOWNLOAD_TEXT, downloadButtonText)
-
                 putInt(KEY_THEME_ID, themeResId)
-
                 putInt(KEY_TITLE_TEXT, dialogTitleText)
-
                 putBoolean(KEY_CANCELABLE, cancelable)
 
                 promptsStyling?.apply {
                     putInt(KEY_DIALOG_GRAVITY, gravity)
                     putBoolean(KEY_DIALOG_WIDTH_MATCH_PARENT, shouldWidthMatchParent)
 
-                    positiveButtonBackgroundColor?.apply {
-                        putInt(KEY_POSITIVE_BUTTON_BACKGROUND_COLOR, this)
+                    positiveButtonBackgroundColor?.let {
+                        putInt(KEY_POSITIVE_BUTTON_BACKGROUND_COLOR, it)
                     }
 
-                    positiveButtonTextColor?.apply {
-                        putInt(KEY_POSITIVE_BUTTON_TEXT_COLOR, this)
+                    positiveButtonTextColor?.let {
+                        putInt(KEY_POSITIVE_BUTTON_TEXT_COLOR, it)
                     }
 
-                    positiveButtonRadius?.apply {
-                        putFloat(KEY_POSITIVE_BUTTON_RADIUS, this)
+                    positiveButtonRadius?.let {
+                        putFloat(KEY_POSITIVE_BUTTON_RADIUS, it)
                     }
                 }
             }
@@ -192,6 +182,8 @@ class SimpleDownloadDialogFragment : DownloadDialogFragment() {
         }
 
         const val KEY_DOWNLOAD_TEXT = "KEY_DOWNLOAD_TEXT"
+
+        // WARNING: If KEY_CONTENT_LENGTH is <= 0, this will be overriden with the default string "Download"
         const val KEY_TITLE_TEXT = "KEY_TITLE_TEXT"
         const val KEY_THEME_ID = "KEY_THEME_ID"
         const val KEY_CANCELABLE = "KEY_CANCELABLE"

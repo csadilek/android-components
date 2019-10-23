@@ -75,6 +75,7 @@ internal class SitePermissionsDialogFragment : AppCompatDialogFragment() {
 
         val sheetDialog = Dialog(requireContext())
         sheetDialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        sheetDialog.setCanceledOnTouchOutside(true)
 
         val rootView = createContainer()
 
