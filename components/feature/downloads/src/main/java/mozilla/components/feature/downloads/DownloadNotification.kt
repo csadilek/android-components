@@ -77,7 +77,7 @@ internal object DownloadNotification {
         val channelId = ensureChannelExists(context)
 
         return NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.mozac_feature_download_ic_download)
+            .setSmallIcon(R.drawable.mozac_feature_download_ic_download_complete)
             .setContentTitle(downloadState.fileName)
             .setContentText(context.getString(R.string.mozac_feature_downloads_completed_notification_text2))
             .setColor(ContextCompat.getColor(context, R.color.mozac_feature_downloads_notification))
