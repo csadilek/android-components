@@ -9,6 +9,7 @@ import android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE
 import android.app.DownloadManager.EXTRA_DOWNLOAD_ID
 import android.app.Service
 import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -65,7 +66,7 @@ abstract class AbstractFetchDownloadService : Service() {
     @VisibleForTesting
     internal val context: Context get() = this
 
-    private var listOfDownloadJobs = mutableMapOf<Long, DownloadJobState>()
+    private var downloadJobs = mutableMapOf<Long, DownloadJobState>()
 
     private data class DownloadJobState(
         var job: Job? = null,
@@ -86,7 +87,7 @@ abstract class AbstractFetchDownloadService : Service() {
             override fun onReceive(context: Context, intent: Intent?) {
                 val downloadId =
                         intent?.extras?.getLong(DownloadNotification.EXTRA_DOWNLOAD_ID) ?: return
-                val currentDownloadJobState = listOfDownloadJobs[downloadId] ?: return
+                val currentDownloadJobState = downloadJobs[downloadId] ?: return
 
                 when (intent.action) {
                     ACTION_PAUSE -> {
@@ -96,7 +97,11 @@ abstract class AbstractFetchDownloadService : Service() {
 
                     ACTION_RESUME -> {
                         displayOngoingDownloadNotification(currentDownloadJobState.state)
-                        currentDownloadJobState.job = startDownloadJob(currentDownloadJobState.state, true)
+
+                        currentDownloadJobState.job = CoroutineScope(IO).launch {
+                            startDownloadJob(currentDownloadJobState.state, true)
+                        }
+
                         currentDownloadJobState.status = DownloadJobStatus.ACTIVE
                     }
 
@@ -108,7 +113,10 @@ abstract class AbstractFetchDownloadService : Service() {
                         )
                     }
                     ACTION_TRY_AGAIN -> {
-                        currentDownloadJobState.job = startDownloadJob(currentDownloadJobState.state, false)
+                        currentDownloadJobState.job = CoroutineScope(IO).launch {
+                            startDownloadJob(currentDownloadJobState.state, false)
+                        }
+
                         currentDownloadJobState.status = DownloadJobStatus.ACTIVE
                         displayOngoingDownloadNotification(currentDownloadJobState.state)
                     }
@@ -143,8 +151,8 @@ abstract class AbstractFetchDownloadService : Service() {
         val foregroundServiceId = Random.nextInt()
 
         // Create a new job and add it, with its downloadState to the map
-        listOfDownloadJobs[download.id] = DownloadJobState(
-            job = startDownloadJob(download, false),
+        downloadJobs[download.id] = DownloadJobState(
+            job = CoroutineScope(IO).launch { startDownloadJob(download, false) },
             state = download,
             foregroundServiceId = foregroundServiceId,
             status = DownloadJobStatus.ACTIVE
@@ -155,36 +163,33 @@ abstract class AbstractFetchDownloadService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        listOfDownloadJobs.values.forEach {
+        downloadJobs.values.forEach {
             it.job?.cancel()
         }
     }
 
-    private fun startDownloadJob(download: DownloadState, isResuming: Boolean): Job {
-        return CoroutineScope(IO).launch {
+    private fun startDownloadJob(download: DownloadState, isResuming: Boolean) {
             var tag: String
             val notification = try {
                 performDownload(download, isResuming)
 
-                when (listOfDownloadJobs[download.id]?.status) {
-                    DownloadJobStatus.CANCELLED -> {
-                        return@launch
-                    }
+                when (downloadJobs[download.id]?.status) {
+                    DownloadJobStatus.CANCELLED -> { return }
 
                     DownloadJobStatus.PAUSED -> {
-                        tag = listOfDownloadJobs[download.id]?.foregroundServiceId?.toString()!!
+                        tag = downloadJobs[download.id]?.foregroundServiceId?.toString()!!
                         DownloadNotification.createPausedDownloadNotification(context, download)
                     }
 
                     DownloadJobStatus.ACTIVE -> {
-                        tag = listOfDownloadJobs[download.id]?.foregroundServiceId?.toString()!!
+                        tag = downloadJobs[download.id]?.foregroundServiceId?.toString()!!
                         DownloadNotification.createDownloadCompletedNotification(context, download)
                     }
 
-                    null -> { return@launch }
+                    null -> { return }
                 }
             } catch (e: IOException) {
-                tag = listOfDownloadJobs[download.id]?.foregroundServiceId?.toString()!!
+                tag = downloadJobs[download.id]?.foregroundServiceId?.toString()!!
                 DownloadNotification.createDownloadFailedNotification(context, download)
             }
 
@@ -195,7 +200,6 @@ abstract class AbstractFetchDownloadService : Service() {
             )
 
             sendDownloadCompleteBroadcast(download.id)
-        }
     }
 
     private fun registerForUpdates() {
@@ -218,7 +222,7 @@ abstract class AbstractFetchDownloadService : Service() {
 
         NotificationManagerCompat.from(context).notify(
             context,
-            listOfDownloadJobs[download.id]?.foregroundServiceId?.toString() ?: "",
+            downloadJobs[download.id]?.foregroundServiceId?.toString() ?: "",
             ongoingDownloadNotification
         )
     }
@@ -230,15 +234,15 @@ abstract class AbstractFetchDownloadService : Service() {
 
         response.body.useStream { inStream ->
             val newDownloadState = download.withResponse(response.headers, inStream)
-            listOfDownloadJobs[download.id]?.state = newDownloadState
+            downloadJobs[download.id]?.state = newDownloadState
 
             displayOngoingDownloadNotification(newDownloadState)
 
             useFileStream(newDownloadState, isResuming) { outStream ->
                 if (isResuming) {
-                    inStream.skip(listOfDownloadJobs[download.id]?.currentBytesCopied ?: 0)
+                    inStream.skip(downloadJobs[download.id]?.currentBytesCopied ?: 0)
                 }
-                copyInChunks(listOfDownloadJobs[download.id]!!, inStream, outStream)
+                copyInChunks(downloadJobs[download.id]!!, inStream, outStream)
             }
         }
     }

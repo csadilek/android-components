@@ -47,7 +47,7 @@ import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifChanged
  * @property useCases [DownloadsUseCases] instance for consuming processed downloads.
  * @property fragmentManager a reference to a [FragmentManager]. If a fragment
  * manager is provided, a dialog will be shown before every download.
- * @property: TODO
+ * @property promptsStyling styling properties for the dialog
  * @property dialog a reference to a [DownloadDialogFragment]. If not provided, an
  * instance of [SimpleDownloadDialogFragment] will be used.
  */
@@ -62,7 +62,7 @@ class DownloadsFeature(
     private val fragmentManager: FragmentManager? = null,
     private val promptsStyling: PromptsStyling? = null,
     @VisibleForTesting(otherwise = PRIVATE)
-internal var dialog: DownloadDialogFragment = SimpleDownloadDialogFragment.newInstance(
+    internal var dialog: DownloadDialogFragment = SimpleDownloadDialogFragment.newInstance(
         promptsStyling = promptsStyling
 )
 ) : LifecycleAwareFeature, PermissionsFeature {
