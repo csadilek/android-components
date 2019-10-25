@@ -9,7 +9,6 @@ import android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE
 import android.app.DownloadManager.EXTRA_DOWNLOAD_ID
 import android.app.Service
 import android.content.BroadcastReceiver
-import android.content.ComponentName
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -75,7 +74,8 @@ abstract class AbstractFetchDownloadService : Service() {
     private enum class DownloadJobStatus {
         ACTIVE,
         PAUSED,
-        CANCELLED
+        CANCELLED,
+        FAILED
     }
 
     private val broadcastReceiver by lazy {
@@ -95,7 +95,7 @@ abstract class AbstractFetchDownloadService : Service() {
                         displayOngoingDownloadNotification(currentDownloadJobState.state)
 
                         currentDownloadJobState.job = CoroutineScope(IO).launch {
-                            startDownloadJob(currentDownloadJobState.state, true)
+                            startDownloadJob(currentDownloadJobState.state)
                         }
 
                         currentDownloadJobState.status = DownloadJobStatus.ACTIVE
@@ -110,7 +110,7 @@ abstract class AbstractFetchDownloadService : Service() {
                     }
                     ACTION_TRY_AGAIN -> {
                         currentDownloadJobState.job = CoroutineScope(IO).launch {
-                            startDownloadJob(currentDownloadJobState.state, false)
+                            startDownloadJob(currentDownloadJobState.state)
                         }
 
                         currentDownloadJobState.status = DownloadJobStatus.ACTIVE
@@ -148,7 +148,7 @@ abstract class AbstractFetchDownloadService : Service() {
 
         // Create a new job and add it, with its downloadState to the map
         downloadJobs[download.id] = DownloadJobState(
-            job = CoroutineScope(IO).launch { startDownloadJob(download, false) },
+            job = CoroutineScope(IO).launch { startDownloadJob(download) },
             state = download,
             foregroundServiceId = foregroundServiceId,
             status = DownloadJobStatus.ACTIVE
@@ -164,38 +164,37 @@ abstract class AbstractFetchDownloadService : Service() {
         }
     }
 
-    private fun startDownloadJob(download: DownloadState, isResuming: Boolean) {
-            var tag: String
-            val notification = try {
-                performDownload(download, isResuming)
+    private fun startDownloadJob(download: DownloadState) {
+        val notification = try {
+            performDownload(download)
+            when (downloadJobs[download.id]?.status) {
+                DownloadJobStatus.CANCELLED -> { return }
 
-                when (downloadJobs[download.id]?.status) {
-                    DownloadJobStatus.CANCELLED -> { return }
-
-                    DownloadJobStatus.PAUSED -> {
-                        tag = downloadJobs[download.id]?.foregroundServiceId?.toString()!!
-                        DownloadNotification.createPausedDownloadNotification(context, download)
-                    }
-
-                    DownloadJobStatus.ACTIVE -> {
-                        tag = downloadJobs[download.id]?.foregroundServiceId?.toString()!!
-                        DownloadNotification.createDownloadCompletedNotification(context, download)
-                    }
-
-                    null -> { return }
+                DownloadJobStatus.PAUSED -> {
+                    DownloadNotification.createPausedDownloadNotification(context, download)
                 }
-            } catch (e: IOException) {
-                tag = downloadJobs[download.id]?.foregroundServiceId?.toString()!!
-                DownloadNotification.createDownloadFailedNotification(context, download)
+
+                DownloadJobStatus.ACTIVE -> {
+                    DownloadNotification.createDownloadCompletedNotification(context, download)
+                }
+
+                DownloadJobStatus.FAILED -> {
+                    DownloadNotification.createDownloadFailedNotification(context, download)
+                }
+
+                null -> { return }
             }
+        } catch (e: IOException) {
+            DownloadNotification.createDownloadFailedNotification(context, download)
+        }
 
-            NotificationManagerCompat.from(context).notify(
-                    context,
-                    tag,
-                    notification
-            )
+        NotificationManagerCompat.from(context).notify(
+                context,
+                downloadJobs[download.id]?.foregroundServiceId?.toString()!!,
+                notification
+        )
 
-            sendDownloadCompleteBroadcast(download.id)
+        sendDownloadCompleteBroadcast(download.id)
     }
 
     private fun registerForUpdates() {
