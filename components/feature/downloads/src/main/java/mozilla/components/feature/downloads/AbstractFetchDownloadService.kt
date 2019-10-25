@@ -32,13 +32,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.state.content.DownloadState
 import mozilla.components.concept.fetch.Client
-import mozilla.components.concept.fetch.Header
-import mozilla.components.concept.fetch.Headers.Names.CONTENT_LENGTH
-import mozilla.components.concept.fetch.Headers.Names.CONTENT_TYPE
-import mozilla.components.concept.fetch.Headers.Names.REFERRER
+import mozilla.components.concept.fetch.Headers.Names.RANGE
 import mozilla.components.concept.fetch.MutableHeaders
 import mozilla.components.concept.fetch.Request
-import mozilla.components.concept.fetch.toMutableHeaders
 import mozilla.components.feature.downloads.ext.addCompletedDownload
 import mozilla.components.feature.downloads.ext.getDownloadExtra
 import mozilla.components.feature.downloads.ext.withResponse
@@ -227,10 +223,23 @@ abstract class AbstractFetchDownloadService : Service() {
         )
     }
 
-    internal fun performDownload(download: DownloadState, isResuming: Boolean) {
-        val headers = getHeadersFromDownload(download)
+    internal fun performDownload(download: DownloadState) {
+        val isResumingDownload = downloadJobs[download.id]?.currentBytesCopied ?: 0L > 0L
+        val headers = MutableHeaders()
+
+        if (isResumingDownload) {
+            headers.append(RANGE, "bytes=${downloadJobs[download.id]?.currentBytesCopied}-")
+        }
+
         val request = Request(download.url, headers = headers)
         val response = httpClient.fetch(request)
+
+        if (response.status != PARTIAL_CONTENT_STATUS && response.status != OK_STATUS) {
+            // We experienced a problem trying to fetch the file, send a failure notification
+            downloadJobs[download.id]?.currentBytesCopied = 0
+            downloadJobs[download.id]?.status = DownloadJobStatus.FAILED
+            return
+        }
 
         response.body.useStream { inStream ->
             val newDownloadState = download.withResponse(response.headers, inStream)
@@ -238,10 +247,7 @@ abstract class AbstractFetchDownloadService : Service() {
 
             displayOngoingDownloadNotification(newDownloadState)
 
-            useFileStream(newDownloadState, isResuming) { outStream ->
-                if (isResuming) {
-                    inStream.skip(downloadJobs[download.id]?.currentBytesCopied ?: 0)
-                }
+            useFileStream(newDownloadState, isResumingDownload) { outStream ->
                 copyInChunks(downloadJobs[download.id]!!, inStream, outStream)
             }
         }
@@ -260,16 +266,6 @@ abstract class AbstractFetchDownloadService : Service() {
 
             outStream.write(data, 0, bytesRead)
         }
-    }
-
-    private fun getHeadersFromDownload(download: DownloadState): MutableHeaders {
-        return listOf(
-            CONTENT_TYPE to download.contentType,
-            CONTENT_LENGTH to download.contentLength?.toString(),
-            REFERRER to download.referrerUrl
-        ).mapNotNull { (name, value) ->
-            if (value.isNullOrBlank()) null else Header(name, value)
-        }.toMutableHeaders()
     }
 
     /**
@@ -347,6 +343,8 @@ abstract class AbstractFetchDownloadService : Service() {
     companion object {
         private const val FILE_PROVIDER_EXTENSION = ".fileprovider"
         private const val chunkSize = 4 * 1024
+        private const val PARTIAL_CONTENT_STATUS = 206
+        private const val OK_STATUS = 200
 
         const val ACTION_OPEN = "mozilla.components.feature.downloads.OPEN"
         const val ACTION_PAUSE = "mozilla.components.feature.downloads.PAUSE"

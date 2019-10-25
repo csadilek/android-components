@@ -69,7 +69,7 @@ class AbstractFetchDownloadServiceTest {
 
         val providedDownload = argumentCaptor<DownloadState>()
 
-        verify(service).performDownload(providedDownload.capture(), anyBoolean())
+        verify(service).performDownload(providedDownload.capture())
         assertEquals(download.url, providedDownload.value.url)
         assertEquals(download.fileName, providedDownload.value.fileName)
 
