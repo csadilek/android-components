@@ -23,7 +23,7 @@ import kotlin.random.Random
  */
 data class DownloadState(
     val url: String,
-    val fileName: String? = null,
+    var fileName: String? = null,
     val contentType: String? = null,
     val contentLength: Long? = null,
     val userAgent: String? = null,

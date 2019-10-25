@@ -5,6 +5,7 @@
 package mozilla.components.feature.downloads
 
 import android.content.Context
+import android.os.Environment
 import android.widget.Toast
 import androidx.annotation.ColorRes
 import androidx.annotation.VisibleForTesting
@@ -30,6 +31,7 @@ import mozilla.components.support.base.feature.PermissionsFeature
 import mozilla.components.support.ktx.android.content.appName
 import mozilla.components.support.ktx.android.content.isPermissionGranted
 import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifChanged
+import java.io.File
 
 /**
  * Feature implementation to provide download functionality for the selected
@@ -51,6 +53,7 @@ import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifChanged
  * @property dialog a reference to a [DownloadDialogFragment]. If not provided, an
  * instance of [SimpleDownloadDialogFragment] will be used.
  */
+@Suppress("TooManyFunctions")
 class DownloadsFeature(
     private val applicationContext: Context,
     private val store: BrowserStore,
@@ -81,6 +84,7 @@ class DownloadsFeature(
      * Starts observing downloads on the selected session and sends them to the [DownloadManager]
      * to be processed.
      */
+    @Suppress("Deprecation")
     override fun start() {
         findPreviousDialogFragment()?.let {
             dialog = it
@@ -92,6 +96,11 @@ class DownloadsFeature(
                 .collect { state ->
                     val download = state.content.download
                     if (download != null) {
+                        // Update the file name to ensure it doesn't collide with one already on disk
+                        download.fileName = uniqueFileName(
+                            Environment.getExternalStoragePublicDirectory(download.destinationDirectory),
+                            download.fileName!!
+                        )
                         processDownload(state, download)
                     }
                 }
@@ -112,6 +121,7 @@ class DownloadsFeature(
      */
     private fun processDownload(tab: SessionState, download: DownloadState): Boolean {
         return if (applicationContext.isPermissionGranted(downloadManager.permissions.asIterable())) {
+
             if (fragmentManager != null && !download.skipConfirmation) {
                 showDialog(tab, download)
                 false
@@ -197,6 +207,24 @@ class DownloadsFeature(
         val state = store.state.findCustomTabOrSelectedTab(customTabId) ?: return
         val download = state.content.download ?: return
         block(Pair(state, download))
+    }
+
+    /**
+     * Checks if the file exists so as not to overwrite one already in downloads
+     */
+    private fun uniqueFileName(directory: File, fileName: String): String {
+        val fileExtension = fileName.substringAfterLast(".")
+        val baseFileName = fileName.replace(fileExtension, "")
+
+        var potentialFileName = File(directory, fileName)
+        var copyVersionNumber = 1
+
+        while (potentialFileName.exists()) {
+            potentialFileName = File(directory, "$baseFileName($copyVersionNumber).$fileExtension")
+            copyVersionNumber += 1
+        }
+
+        return potentialFileName.name
     }
 
     /**

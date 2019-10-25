@@ -321,6 +321,7 @@ abstract class AbstractFetchDownloadService : Service() {
     private fun useFileStreamLegacy(download: DownloadState, append: Boolean, block: (OutputStream) -> Unit) {
         val dir = Environment.getExternalStoragePublicDirectory(download.destinationDirectory)
         val file = File(dir, download.fileName!!)
+
         FileOutputStream(file, append).use(block)
 
         addCompletedDownload(
