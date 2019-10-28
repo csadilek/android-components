@@ -23,6 +23,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito
 import org.robolectric.annotation.Config
+import org.mockito.Mockito.doReturn
 
 @RunWith(AndroidJUnit4::class)
 @Config(application = TestApplication::class)
@@ -56,8 +57,8 @@ class SimpleDownloadDialogFragmentTest {
         fragment.onStartDownload = onStartDownload
         fragment.testingContext = testContext
 
-        Mockito.doReturn(testContext).`when`(fragment).requireContext()
-        Mockito.doReturn(mockFragmentManager()).`when`(fragment).fragmentManager
+        doReturn(testContext).`when`(fragment).requireContext()
+        doReturn(mockFragmentManager()).`when`(fragment).fragmentManager
 
         val downloadDialog = fragment.onCreateDialog(null)
         downloadDialog.show()
@@ -86,7 +87,7 @@ class SimpleDownloadDialogFragmentTest {
                         promptsStyling
                 )
         )
-        Mockito.doReturn(testContext).`when`(fragment).requireContext()
+        doReturn(testContext).`when`(fragment).requireContext()
 
         val dialog = fragment.onCreateDialog(null)
         val dialogAttributes = dialog.window!!.attributes
@@ -102,7 +103,7 @@ class SimpleDownloadDialogFragmentTest {
     private fun mockFragmentManager(): FragmentManager {
         val fragmentManager: FragmentManager = mock()
         val transaction: FragmentTransaction = mock()
-        Mockito.doReturn(transaction).`when`(fragmentManager).beginTransaction()
+        doReturn(transaction).`when`(fragmentManager).beginTransaction()
         return fragmentManager
     }
 }

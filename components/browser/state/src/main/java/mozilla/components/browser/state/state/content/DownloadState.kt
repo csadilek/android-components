@@ -21,14 +21,16 @@ import kotlin.random.Random
  * @property skipConfirmation Whether or not the confirmation dialog should be shown before the download begins.
  * @property id The unique identifier of this download.
  */
+@Suppress("Deprecation")
 data class DownloadState(
     val url: String,
-    var fileName: String? = null,
+    val fileName: String? = null,
     val contentType: String? = null,
     val contentLength: Long? = null,
     val userAgent: String? = null,
     val destinationDirectory: String = Environment.DIRECTORY_DOWNLOADS,
-    var filePath: String? = null,
+    val filePath: String =
+        Environment.getExternalStoragePublicDirectory(destinationDirectory).path + "/" + fileName,
     val referrerUrl: String? = null,
     val skipConfirmation: Boolean = false,
     val id: Long = Random.nextLong()

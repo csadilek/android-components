@@ -31,14 +31,13 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.state.content.DownloadState
 import mozilla.components.concept.fetch.Client
+import mozilla.components.concept.fetch.Headers.Names.CONTENT_RANGE
 import mozilla.components.concept.fetch.Headers.Names.RANGE
 import mozilla.components.concept.fetch.MutableHeaders
 import mozilla.components.concept.fetch.Request
 import mozilla.components.feature.downloads.ext.addCompletedDownload
 import mozilla.components.feature.downloads.ext.getDownloadExtra
 import mozilla.components.feature.downloads.ext.withResponse
-import mozilla.components.support.base.ids.cancel
-import mozilla.components.support.base.ids.notify
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -95,12 +94,11 @@ abstract class AbstractFetchDownloadService : Service() {
                         NotificationManagerCompat.from(context).cancel(
                             currentDownloadJobState.foregroundServiceId
                         )
+                        currentDownloadJobState.status = DownloadJobStatus.ACTIVE
 
                         currentDownloadJobState.job = CoroutineScope(IO).launch {
                             startDownloadJob(currentDownloadJobState.state)
                         }
-
-                        currentDownloadJobState.status = DownloadJobStatus.ACTIVE
                     }
 
                     ACTION_CANCEL -> {
@@ -113,18 +111,17 @@ abstract class AbstractFetchDownloadService : Service() {
                         NotificationManagerCompat.from(context).cancel(
                             currentDownloadJobState.foregroundServiceId
                         )
+                        currentDownloadJobState.status = DownloadJobStatus.ACTIVE
 
                         currentDownloadJobState.job = CoroutineScope(IO).launch {
                             startDownloadJob(currentDownloadJobState.state)
                         }
-
-                        currentDownloadJobState.status = DownloadJobStatus.ACTIVE
                     }
 
                     ACTION_OPEN -> {
                         // Create a new file with the location of the saved file to extract the correct path
                         // `file` has the wrong path, so we must construct it based on the `fileName` and `dir.path`s
-                        val fileLocation = File(currentDownloadJobState.state.filePath ?: "")
+                        val fileLocation = File(currentDownloadJobState.state.filePath)
                         val filePath = FileProvider.getUriForFile(
                                 context,
                                 context.packageName + FILE_PROVIDER_EXTENSION,
@@ -237,7 +234,10 @@ abstract class AbstractFetchDownloadService : Service() {
         val request = Request(download.url, headers = headers)
         val response = httpClient.fetch(request)
 
-        if (response.status != PARTIAL_CONTENT_STATUS && response.status != OK_STATUS) {
+        // If we are resuming a download and the response does not contain a CONTENT_RANGE
+        // we cannot be sure that the request will properly be handled
+        if (response.status != PARTIAL_CONTENT_STATUS && response.status != OK_STATUS ||
+            (isResumingDownload && !response.headers.contains(CONTENT_RANGE))) {
             // We experienced a problem trying to fetch the file, send a failure notification
             downloadJobs[download.id]?.currentBytesCopied = 0
             downloadJobs[download.id]?.status = DownloadJobStatus.FAILED
@@ -340,8 +340,6 @@ abstract class AbstractFetchDownloadService : Service() {
             uri = download.url.toUri(),
             referer = download.referrerUrl?.toUri()
         )
-
-        download.filePath = dir.path + "/" + download.fileName
     }
 
     companion object {
