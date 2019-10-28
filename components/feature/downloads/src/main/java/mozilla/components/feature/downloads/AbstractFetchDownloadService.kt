@@ -92,7 +92,9 @@ abstract class AbstractFetchDownloadService : Service() {
                     }
 
                     ACTION_RESUME -> {
-                        displayOngoingDownloadNotification(currentDownloadJobState.state)
+                        NotificationManagerCompat.from(context).cancel(context,
+                                currentDownloadJobState.foregroundServiceId.toString()
+                        )
 
                         currentDownloadJobState.job = CoroutineScope(IO).launch {
                             startDownloadJob(currentDownloadJobState.state)
@@ -103,19 +105,20 @@ abstract class AbstractFetchDownloadService : Service() {
 
                     ACTION_CANCEL -> {
                         currentDownloadJobState.status = DownloadJobStatus.CANCELLED
+                        stopForeground(true)
                         currentDownloadJobState.job?.cancel()
-                        NotificationManagerCompat.from(context).cancel(context,
-                                currentDownloadJobState.foregroundServiceId.toString()
-                        )
                     }
 
                     ACTION_TRY_AGAIN -> {
+                        NotificationManagerCompat.from(context).cancel(context,
+                                currentDownloadJobState.foregroundServiceId.toString()
+                        )
+
                         currentDownloadJobState.job = CoroutineScope(IO).launch {
                             startDownloadJob(currentDownloadJobState.state)
                         }
 
                         currentDownloadJobState.status = DownloadJobStatus.ACTIVE
-                        displayOngoingDownloadNotification(currentDownloadJobState.state)
                     }
 
                     ACTION_OPEN -> {
@@ -191,8 +194,7 @@ abstract class AbstractFetchDownloadService : Service() {
         }
 
         NotificationManagerCompat.from(context).notify(
-                context,
-                downloadJobs[download.id]?.foregroundServiceId?.toString()!!,
+                downloadJobs[download.id]?.foregroundServiceId ?: 0,
                 notification
         )
 
@@ -211,15 +213,15 @@ abstract class AbstractFetchDownloadService : Service() {
         context.registerReceiver(broadcastReceiver, filter)
     }
 
-    internal fun displayOngoingDownloadNotification(download: DownloadState) {
+    private fun displayOngoingDownloadNotification(download: DownloadState) {
         val ongoingDownloadNotification = DownloadNotification.createOngoingDownloadNotification(
             context,
             download
         )
 
-        NotificationManagerCompat.from(context).notify(
-            context,
-            downloadJobs[download.id]?.foregroundServiceId?.toString() ?: "",
+        // We want to startForeground so that the system is less likely to kill our service under memory pressure.
+        startForeground(
+            downloadJobs[download.id]?.foregroundServiceId ?: 0,
             ongoingDownloadNotification
         )
     }
