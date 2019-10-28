@@ -19,7 +19,10 @@ import mozilla.components.feature.downloads.AbstractFetchDownloadService.Compani
 import mozilla.components.feature.downloads.AbstractFetchDownloadService.Companion.ACTION_PAUSE
 import mozilla.components.feature.downloads.AbstractFetchDownloadService.Companion.ACTION_RESUME
 import mozilla.components.feature.downloads.AbstractFetchDownloadService.Companion.ACTION_TRY_AGAIN
-import mozilla.components.feature.downloads.AbstractFetchDownloadService.DownloadJobStatus.*
+import mozilla.components.feature.downloads.AbstractFetchDownloadService.DownloadJobStatus.FAILED
+import mozilla.components.feature.downloads.AbstractFetchDownloadService.DownloadJobStatus.CANCELLED
+import mozilla.components.feature.downloads.AbstractFetchDownloadService.DownloadJobStatus.ACTIVE
+import mozilla.components.feature.downloads.AbstractFetchDownloadService.DownloadJobStatus.PAUSED
 import mozilla.components.feature.downloads.ext.putDownloadExtra
 import mozilla.components.support.test.any
 import mozilla.components.support.test.argumentCaptor
