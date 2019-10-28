@@ -60,9 +60,9 @@ abstract class AbstractFetchDownloadService : Service() {
     @VisibleForTesting
     internal val context: Context get() = this
 
-    private var downloadJobs = mutableMapOf<Long, DownloadJobState>()
+    internal var downloadJobs = mutableMapOf<Long, DownloadJobState>()
 
-    private data class DownloadJobState(
+    internal data class DownloadJobState(
         var job: Job? = null,
         var state: DownloadState,
         var currentBytesCopied: Long = 0,
@@ -70,14 +70,14 @@ abstract class AbstractFetchDownloadService : Service() {
         var foregroundServiceId: Int = 0
     )
 
-    private enum class DownloadJobStatus {
+    internal enum class DownloadJobStatus {
         ACTIVE,
         PAUSED,
         CANCELLED,
         FAILED
     }
 
-    private val broadcastReceiver by lazy {
+    internal val broadcastReceiver by lazy {
         object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent?) {
                 val downloadId =
@@ -166,7 +166,7 @@ abstract class AbstractFetchDownloadService : Service() {
         }
     }
 
-    private fun startDownloadJob(download: DownloadState) {
+    internal fun startDownloadJob(download: DownloadState) {
         val notification = try {
             performDownload(download)
             when (downloadJobs[download.id]?.status) {
