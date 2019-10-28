@@ -96,11 +96,13 @@ class DownloadsFeature(
                 .collect { state ->
                     val download = state.content.download
                     if (download != null) {
-                        // Update the file name to ensure it doesn't collide with one already on disk
-                        download.fileName = uniqueFileName(
-                            Environment.getExternalStoragePublicDirectory(download.destinationDirectory),
-                            download.fileName!!
-                        )
+                        // Update the file name to ensure it doesn't collide with one already on disk]
+                        download.fileName = download.fileName?.let {
+                            uniqueFileName(
+                                Environment.getExternalStoragePublicDirectory(download.destinationDirectory),
+                                it
+                            )
+                        }
                         processDownload(state, download)
                     }
                 }

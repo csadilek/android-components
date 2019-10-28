@@ -108,6 +108,7 @@ abstract class AbstractFetchDownloadService : Service() {
                                 currentDownloadJobState.foregroundServiceId.toString()
                         )
                     }
+
                     ACTION_TRY_AGAIN -> {
                         currentDownloadJobState.job = CoroutineScope(IO).launch {
                             startDownloadJob(currentDownloadJobState.state)
@@ -116,6 +117,7 @@ abstract class AbstractFetchDownloadService : Service() {
                         currentDownloadJobState.status = DownloadJobStatus.ACTIVE
                         displayOngoingDownloadNotification(currentDownloadJobState.state)
                     }
+
                     ACTION_OPEN -> {
                         // Create a new file with the location of the saved file to extract the correct path
                         // `file` has the wrong path, so we must construct it based on the `fileName` and `dir.path`s
