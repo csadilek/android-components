@@ -92,8 +92,8 @@ abstract class AbstractFetchDownloadService : Service() {
                     }
 
                     ACTION_RESUME -> {
-                        NotificationManagerCompat.from(context).cancel(context,
-                                currentDownloadJobState.foregroundServiceId.toString()
+                        NotificationManagerCompat.from(context).cancel(
+                            currentDownloadJobState.foregroundServiceId
                         )
 
                         currentDownloadJobState.job = CoroutineScope(IO).launch {
@@ -110,8 +110,8 @@ abstract class AbstractFetchDownloadService : Service() {
                     }
 
                     ACTION_TRY_AGAIN -> {
-                        NotificationManagerCompat.from(context).cancel(context,
-                                currentDownloadJobState.foregroundServiceId.toString()
+                        NotificationManagerCompat.from(context).cancel(
+                            currentDownloadJobState.foregroundServiceId
                         )
 
                         currentDownloadJobState.job = CoroutineScope(IO).launch {

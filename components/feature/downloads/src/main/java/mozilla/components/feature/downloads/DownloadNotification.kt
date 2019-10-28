@@ -98,6 +98,7 @@ internal object DownloadNotification {
             .setColor(ContextCompat.getColor(context, R.color.mozac_feature_downloads_notification))
             .setCategory(NotificationCompat.CATEGORY_ERROR)
             .addAction(getTryAgainAction(context, downloadState.id))
+            .addAction(getCancelAction(context, downloadState.id))
             .build()
     }
 
