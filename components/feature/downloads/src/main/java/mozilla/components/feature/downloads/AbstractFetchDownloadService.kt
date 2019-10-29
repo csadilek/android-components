@@ -150,11 +150,14 @@ abstract class AbstractFetchDownloadService : Service() {
 
         // Create a new job and add it, with its downloadState to the map
         downloadJobs[download.id] = DownloadJobState(
-            job = CoroutineScope(IO).launch { startDownloadJob(download) },
             state = download,
             foregroundServiceId = foregroundServiceId,
             status = DownloadJobStatus.ACTIVE
         )
+
+        downloadJobs[download.id]?.job = CoroutineScope(IO).launch {
+            startDownloadJob(download)
+        }
 
         return super.onStartCommand(intent, flags, startId)
     }
@@ -259,7 +262,7 @@ abstract class AbstractFetchDownloadService : Service() {
     private fun copyInChunks(downloadJobState: DownloadJobState, inStream: InputStream, outStream: OutputStream) {
         // To ensure that we copy all files (even ones that don't have fileSize, we must NOT check < fileSize
         while (downloadJobState.status == DownloadJobStatus.ACTIVE) {
-            val data = ByteArray(chunkSize)
+            val data = ByteArray(CHUNK_SIZE)
             val bytesRead = inStream.read(data)
 
             // If bytesRead is -1, there's no data left to read from the stream
@@ -344,7 +347,7 @@ abstract class AbstractFetchDownloadService : Service() {
 
     companion object {
         private const val FILE_PROVIDER_EXTENSION = ".fileprovider"
-        private const val chunkSize = 4 * 1024
+        private const val CHUNK_SIZE = 4 * 1024
         private const val PARTIAL_CONTENT_STATUS = 206
         private const val OK_STATUS = 200
 

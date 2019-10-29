@@ -29,9 +29,7 @@ import mozilla.components.support.test.argumentCaptor
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,6 +54,7 @@ class AbstractFetchDownloadServiceTest {
         service = spy(object : AbstractFetchDownloadService() {
             override val httpClient = client
         })
+
         doReturn(broadcastManager).`when`(service).broadcastManager
         doReturn(testContext).`when`(service).context
     }
@@ -77,6 +76,7 @@ class AbstractFetchDownloadServiceTest {
         }
 
         service.onStartCommand(downloadIntent, 0, 0)
+        service.downloadJobs.values.forEach { it.job?.join() }
 
         val providedDownload = argumentCaptor<DownloadState>()
         verify(service).performDownload(providedDownload.capture())
@@ -87,8 +87,6 @@ class AbstractFetchDownloadServiceTest {
         // Ensure the job is properly added to the map
         assertEquals(1, service.downloadJobs.count())
         assertNotNull(service.downloadJobs[providedDownload.value.id])
-
-        Unit
     }
 
     @Test
@@ -98,8 +96,6 @@ class AbstractFetchDownloadServiceTest {
         val intentCode = service.onStartCommand(downloadIntent, 0, 0)
 
         assertEquals(Service.START_REDELIVER_INTENT, intentCode)
-
-        Unit
     }
 
     @Test
@@ -119,6 +115,7 @@ class AbstractFetchDownloadServiceTest {
         }
 
         service.onStartCommand(downloadIntent, 0, 0)
+        service.downloadJobs.values.forEach { it.job?.join() }
 
         val providedDownload = argumentCaptor<DownloadState>()
         verify(service).performDownload(providedDownload.capture())
@@ -129,11 +126,8 @@ class AbstractFetchDownloadServiceTest {
         }
 
         service.broadcastReceiver.onReceive(testContext, pauseIntent)
-
+        service.downloadJobs[providedDownload.value.id]?.job?.join()
         assertEquals(PAUSED, service.downloadJobs[providedDownload.value.id]?.status)
-        assertTrue(service.downloadJobs[providedDownload.value.id]?.job?.isCancelled!!)
-
-        Unit
     }
 
     @Test
@@ -153,6 +147,7 @@ class AbstractFetchDownloadServiceTest {
         }
 
         service.onStartCommand(downloadIntent, 0, 0)
+        service.downloadJobs.values.forEach { it.job?.join() }
 
         val providedDownload = argumentCaptor<DownloadState>()
         verify(service).performDownload(providedDownload.capture())
@@ -163,23 +158,31 @@ class AbstractFetchDownloadServiceTest {
         }
 
         service.broadcastReceiver.onReceive(testContext, cancelIntent)
+        service.downloadJobs[providedDownload.value.id]?.job?.join()
 
         assertEquals(CANCELLED, service.downloadJobs[providedDownload.value.id]?.status)
-        assertTrue(service.downloadJobs[providedDownload.value.id]?.job?.isCancelled!!)
-
-        Unit
     }
 
     @Test
     fun `broadcastReceiver handles ACTION_RESUME`() = runBlocking {
         val download = DownloadState("https://example.com/file.txt", "file.txt")
-        val response = Response(
+
+        val downloadResponse = Response(
             "https://example.com/file.txt",
             200,
             MutableHeaders(),
             Response.Body(mock())
         )
-        doReturn(response).`when`(client).fetch(Request("https://example.com/file.txt"))
+        val resumeResponse = Response(
+            "https://example.com/file.txt",
+            206,
+            MutableHeaders("Content-Range" to "1-67589/67589"),
+            Response.Body(mock())
+        )
+        doReturn(downloadResponse).`when`(client)
+            .fetch(Request("https://example.com/file.txt"))
+        doReturn(resumeResponse).`when`(client)
+            .fetch(Request("https://example.com/file.txt", headers = MutableHeaders("Range" to "bytes=1-")))
         doNothing().`when`(service).useFileStream(any(), anyBoolean(), any())
 
         val downloadIntent = Intent("ACTION_DOWNLOAD").apply {
@@ -187,10 +190,11 @@ class AbstractFetchDownloadServiceTest {
         }
 
         service.onStartCommand(downloadIntent, 0, 0)
+        service.downloadJobs.values.forEach { it.job?.join() }
 
         val providedDownload = argumentCaptor<DownloadState>()
         verify(service).performDownload(providedDownload.capture())
-
+        service.downloadJobs[providedDownload.value.id]?.currentBytesCopied = 1
         service.downloadJobs[providedDownload.value.id]?.status = PAUSED
 
         val resumeIntent = Intent(ACTION_RESUME).apply {
@@ -199,12 +203,10 @@ class AbstractFetchDownloadServiceTest {
         }
 
         service.broadcastReceiver.onReceive(testContext, resumeIntent)
+        service.downloadJobs[providedDownload.value.id]?.job?.join()
 
         assertEquals(ACTIVE, service.downloadJobs[providedDownload.value.id]?.status)
-        assertFalse(service.downloadJobs[providedDownload.value.id]?.job?.isCancelled!!)
         verify(service).startDownloadJob(providedDownload.value)
-
-        Unit
     }
 
     @Test
@@ -224,10 +226,11 @@ class AbstractFetchDownloadServiceTest {
         }
 
         service.onStartCommand(downloadIntent, 0, 0)
+        service.downloadJobs.values.forEach { it.job?.join() }
 
         val providedDownload = argumentCaptor<DownloadState>()
         verify(service).performDownload(providedDownload.capture())
-
+        service.downloadJobs[providedDownload.value.id]?.job?.join()
         service.downloadJobs[providedDownload.value.id]?.status = FAILED
 
         val tryAgainIntent = Intent(ACTION_TRY_AGAIN).apply {
@@ -236,12 +239,10 @@ class AbstractFetchDownloadServiceTest {
         }
 
         service.broadcastReceiver.onReceive(testContext, tryAgainIntent)
+        service.downloadJobs[providedDownload.value.id]?.job?.join()
 
         assertEquals(ACTIVE, service.downloadJobs[providedDownload.value.id]?.status)
-        assertFalse(service.downloadJobs[providedDownload.value.id]?.job?.isCancelled!!)
         verify(service).startDownloadJob(providedDownload.value)
-
-        Unit
     }
 
     @Test
@@ -262,12 +263,12 @@ class AbstractFetchDownloadServiceTest {
         }
 
         service.onStartCommand(downloadIntent, 0, 0)
+        service.downloadJobs.values.forEach { it.job?.join() }
 
         val providedDownload = argumentCaptor<DownloadState>()
         verify(service).performDownload(providedDownload.capture())
 
+        service.downloadJobs[providedDownload.value.id]?.job?.join()
         assertEquals(FAILED, service.downloadJobs[providedDownload.value.id]?.status)
-
-        Unit
     }
 }
