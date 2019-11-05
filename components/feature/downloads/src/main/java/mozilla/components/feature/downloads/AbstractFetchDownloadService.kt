@@ -108,6 +108,10 @@ abstract class AbstractFetchDownloadService : Service() {
                         )
                         currentDownloadJobState.status = DownloadJobStatus.CANCELLED
 
+                        // Delete the partially written file
+                        val downloadedFile = File(currentDownloadJobState.state.filePath)
+                        downloadedFile.delete()
+
                         currentDownloadJobState.job?.cancel()
                     }
 
