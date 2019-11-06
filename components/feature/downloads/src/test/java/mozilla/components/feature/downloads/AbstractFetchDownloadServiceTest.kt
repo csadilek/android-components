@@ -29,7 +29,9 @@ import mozilla.components.support.test.argumentCaptor
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -156,11 +158,12 @@ class AbstractFetchDownloadServiceTest {
             setPackage(testContext.applicationContext.packageName)
             putExtra(DownloadNotification.EXTRA_DOWNLOAD_ID, providedDownload.value.id)
         }
+        assertFalse(service.downloadJobs[providedDownload.value.id]!!.downloadDeleted)
 
         service.broadcastReceiver.onReceive(testContext, cancelIntent)
         service.downloadJobs[providedDownload.value.id]?.job?.join()
-
         assertEquals(CANCELLED, service.downloadJobs[providedDownload.value.id]?.status)
+        assertTrue(service.downloadJobs[providedDownload.value.id]!!.downloadDeleted)
     }
 
     @Test

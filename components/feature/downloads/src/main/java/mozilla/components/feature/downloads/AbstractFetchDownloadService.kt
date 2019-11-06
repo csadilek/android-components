@@ -67,7 +67,8 @@ abstract class AbstractFetchDownloadService : Service() {
         var state: DownloadState,
         var currentBytesCopied: Long = 0,
         var status: DownloadJobStatus,
-        var foregroundServiceId: Int = 0
+        var foregroundServiceId: Int = 0,
+        var downloadDeleted: Boolean = false
     )
 
     /**
@@ -108,11 +109,12 @@ abstract class AbstractFetchDownloadService : Service() {
                         )
                         currentDownloadJobState.status = DownloadJobStatus.CANCELLED
 
-                        // Delete the partially written file
-                        val downloadedFile = File(currentDownloadJobState.state.filePath)
-                        downloadedFile.delete()
-
                         currentDownloadJobState.job?.cancel()
+
+                        currentDownloadJobState.job = CoroutineScope(IO).launch {
+                            deleteDownloadingFile(currentDownloadJobState.state)
+                            currentDownloadJobState.downloadDeleted = true
+                        }
                     }
 
                     ACTION_TRY_AGAIN -> {
@@ -199,6 +201,11 @@ abstract class AbstractFetchDownloadService : Service() {
         )
 
         sendDownloadCompleteBroadcast(download.id, currentDownloadJobState.status)
+    }
+
+    internal fun deleteDownloadingFile(downloadState: DownloadState) {
+        val downloadedFile = File(downloadState.filePath)
+        downloadedFile.delete()
     }
 
     private fun registerForUpdates() {
