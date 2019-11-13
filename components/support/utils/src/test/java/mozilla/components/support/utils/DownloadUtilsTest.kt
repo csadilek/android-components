@@ -15,7 +15,7 @@ import org.robolectric.Shadows
 class DownloadUtilsTest {
 
     private fun assertContentDisposition(expected: String, contentDisposition: String) {
-        assertEquals(expected, DownloadUtils.guessFileName(contentDisposition, null, null))
+        assertEquals(expected, DownloadUtils.guessFileName(contentDisposition, null, null, null))
     }
 
     @Test
@@ -69,15 +69,15 @@ class DownloadUtilsTest {
         Shadows.shadowOf(MimeTypeMap.getSingleton()).addExtensionMimeTypMapping("zip", "application/zip")
         Shadows.shadowOf(MimeTypeMap.getSingleton()).addExtensionMimeTypMapping("tar.gz", "application/gzip")
 
-        assertEquals("file.jpg", DownloadUtils.guessFileName(null, "http://example.com/file.jpg", "image/jpeg"))
-        assertEquals("file.jpg", DownloadUtils.guessFileName(null, "http://example.com/file.bin", "image/jpeg"))
+        assertEquals("file.jpg", DownloadUtils.guessFileName(null, null, "http://example.com/file.jpg", "image/jpeg"))
+        assertEquals("file.jpg", DownloadUtils.guessFileName(null, null, "http://example.com/file.bin", "image/jpeg"))
         assertEquals(
             "Caesium-wahoo-v3.6-b792615ced1b.zip",
-            DownloadUtils.guessFileName(null, "https://download.msfjarvis.website/caesium/wahoo/beta/Caesium-wahoo-v3.6-b792615ced1b.zip", "application/zip")
+            DownloadUtils.guessFileName(null, null, "https://download.msfjarvis.website/caesium/wahoo/beta/Caesium-wahoo-v3.6-b792615ced1b.zip", "application/zip")
         )
         assertEquals(
             "compressed.TAR.GZ",
-            DownloadUtils.guessFileName(null, "http://example.com/compressed.TAR.GZ", "application/gzip")
+            DownloadUtils.guessFileName(null, null, "http://example.com/compressed.TAR.GZ", "application/gzip")
         )
     }
 
@@ -85,7 +85,7 @@ class DownloadUtilsTest {
         private val CONTENT_DISPOSITION_TYPES = listOf("attachment", "inline")
 
         private fun assertUrl(expected: String, url: String) {
-            assertEquals(expected, DownloadUtils.guessFileName(null, url, null))
+            assertEquals(expected, DownloadUtils.guessFileName(null, null, url, null))
         }
     }
 }
