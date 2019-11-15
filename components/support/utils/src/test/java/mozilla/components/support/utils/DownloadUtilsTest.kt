@@ -7,12 +7,17 @@ package mozilla.components.support.utils
 import android.webkit.MimeTypeMap
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.Shadows
 
 @RunWith(AndroidJUnit4::class)
 class DownloadUtilsTest {
+
+    @Rule @JvmField
+    val folder = TemporaryFolder()
 
     private fun assertContentDisposition(expected: String, contentDisposition: String) {
         assertEquals(expected, DownloadUtils.guessFileName(contentDisposition, null, null, null))
@@ -53,6 +58,14 @@ class DownloadUtilsTest {
             assertContentDisposition("file' 'name.jpg",
                 "$contentDisposition; filename=\"_.jpg\"; filename*=iso-8859-1'en'file%27%20%27name.jpg")
         }
+    }
+
+    @Test
+    fun uniqueFilename() {
+        assertEquals("test", DownloadUtils.uniqueFileName(folder.root, "test"))
+
+        folder.newFile("test")
+        assertEquals("test (1)", DownloadUtils.uniqueFileName(folder.root, "test"))
     }
 
     @Test
