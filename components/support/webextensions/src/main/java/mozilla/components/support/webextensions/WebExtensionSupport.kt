@@ -20,6 +20,7 @@ import mozilla.components.concept.engine.webextension.BrowserAction
 import mozilla.components.concept.engine.webextension.WebExtension
 import mozilla.components.concept.engine.webextension.WebExtensionDelegate
 import mozilla.components.lib.state.ext.flowScoped
+import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.ktx.kotlinx.coroutines.flow.filterChanged
 
 /**
@@ -28,8 +29,10 @@ import mozilla.components.support.ktx.kotlinx.coroutines.flow.filterChanged
  * corresponding actions to the [BrowserStore].
  */
 object WebExtensionSupport {
+    private val logger = Logger("mozac-webextensions")
+
     @VisibleForTesting
-    internal val installedExtensions = mutableSetOf<WebExtension>()
+    internal val installedExtensions = mutableMapOf<String, WebExtension>()
 
     /**
      * [ActionHandler] for session-specific overrides. Forwards actions to the
@@ -75,6 +78,9 @@ object WebExtensionSupport {
         onCloseTabOverride: ((WebExtension?, String) -> Unit)? = null,
         onSelectTabOverride: ((WebExtension?, String) -> Unit)? = null
     ) {
+        // Queries the engine for installed extensions and adds them to the store
+        registerInstalledExtensions(store, engine)
+
         // Observe the store and register action handlers for newly added engine sessions
         registerActionHandlersForNewSessions(store)
 
@@ -119,19 +125,40 @@ object WebExtensionSupport {
             }
 
             override fun onInstalled(webExtension: WebExtension) {
-                installedExtensions.add(webExtension)
-                store.dispatch(WebExtensionAction.InstallWebExtension(webExtension.toState()))
-
-                // Register action handler for all existing engine sessions on the new extension
-                store.state.tabs
-                    .forEach {
-                        val session = it.engineState.engineSession
-                        if (session != null) {
-                            registerSessionActionHandler(webExtension, session, SessionActionHandler(store, it.id))
-                        }
-                    }
+                registerInstalledExtension(store, webExtension)
             }
         })
+    }
+
+    /**
+     * Queries the [engine] for installed web extensions and adds them to the [store].
+     */
+    private fun registerInstalledExtensions(store: BrowserStore, engine: Engine) {
+        engine.listInstalledWebExtensions(
+            onSuccess = {
+                extensions -> extensions.forEach { registerInstalledExtension(store, it) }
+            },
+            onError = {
+                throwable -> logger.error("Failed to query installed extension", throwable)
+            }
+        )
+    }
+
+    /**
+     * Marks the provided [webExtension] as installed by adding it to the [store].
+     */
+    private fun registerInstalledExtension(store: BrowserStore, webExtension: WebExtension) {
+        installedExtensions[webExtension.id] = webExtension
+        store.dispatch(WebExtensionAction.InstallWebExtensionAction(webExtension.toState()))
+
+        // Register action handler for all existing engine sessions on the new extension
+        store.state.tabs
+            .forEach {
+                val session = it.engineState.engineSession
+                if (session != null) {
+                    registerSessionActionHandler(webExtension, session, SessionActionHandler(store, it.id))
+                }
+            }
     }
 
     /**
@@ -148,7 +175,7 @@ object WebExtensionSupport {
                 }
                 .collect { state ->
                     state.engineState.engineSession?.let { session ->
-                        installedExtensions.forEach {
+                        installedExtensions.values.forEach {
                             registerSessionActionHandler(it, session, SessionActionHandler(store, state.id))
                         }
                     }
@@ -188,5 +215,5 @@ object WebExtensionSupport {
         onCloseTabOverride?.invoke(webExtension, id) ?: store.dispatch(TabListAction.RemoveTabAction(id))
     }
 
-    private fun WebExtension.toState() = WebExtensionState(id, url)
+    internal fun WebExtension.toState() = WebExtensionState(id, url)
 }
