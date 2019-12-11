@@ -46,7 +46,9 @@ dependencies {
     implementation Dependencies.kotlin_stdlib
     implementation Dependencies.kotlin_coroutines
 
-    api Gecko.geckoview_nightly
+    //api Gecko.geckoview_nightly
+    api(name: 'geckoview-default-arm64-v8a-73.0.20191211004717', ext: 'aar')
+    api "org.yaml:snakeyaml:1.23"
 
     testImplementation Dependencies.androidx_test_core
     testImplementation Dependencies.androidx_test_junit

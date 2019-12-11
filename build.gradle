@@ -30,6 +30,10 @@ allprojects {
         maven {
             url "https://maven.mozilla.org/maven2"
         }
+
+        flatDir(
+            dirs: '/Users/csadilek/Projects/android-components/lib'
+        )
     }
 }
 
