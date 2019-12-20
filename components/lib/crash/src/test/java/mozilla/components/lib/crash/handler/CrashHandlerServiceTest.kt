@@ -19,6 +19,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.doNothing
 import org.mockito.Mockito.spy
+import java.lang.Thread.sleep
 
 @RunWith(AndroidJUnit4::class)
 class CrashHandlerServiceTest {
@@ -69,6 +70,7 @@ class CrashHandlerServiceTest {
         doNothing().`when`(service).kill()
         service.onHandleIntent(intent)
 
+        sleep(100)
         assertNotNull(caughtCrash)
 
         val nativeCrash = caughtCrash

@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import mozilla.components.lib.crash.handler.ExceptionHandler
 import mozilla.components.lib.crash.notification.CrashNotification
 import mozilla.components.lib.crash.prompt.CrashPrompt
@@ -76,18 +77,21 @@ class CrashReporter(
 
     /**
      * Submit a crash report to all registered services.
-     *
-     * Note: This method may block and perform I/O on the calling thread.
      */
-    fun submitReport(crash: Crash) {
-        services.forEach { service ->
-            when (crash) {
-                is Crash.NativeCodeCrash -> service.report(crash)
-                is Crash.UncaughtExceptionCrash -> service.report(crash)
+    fun submitReport(crash: Crash, then: () -> Unit = {}): Job {
+        return GlobalScope.launch(Dispatchers.IO) {
+            services.forEach { service ->
+                when (crash) {
+                    is Crash.NativeCodeCrash -> service.report(crash)
+                    is Crash.UncaughtExceptionCrash -> service.report(crash)
+                }
+            }
+
+            logger.info("Crash report submitted to ${services.size} services")
+            withContext(Dispatchers.Main) {
+                then()
             }
         }
-
-        logger.info("Crash report submitted to ${services.size} services")
     }
 
     /**
@@ -133,7 +137,6 @@ class CrashReporter(
             }
         } else {
             logger.info("Immediately submitting crash report")
-
             submitReport(crash)
         }
     }
