@@ -9,9 +9,11 @@ import android.content.Context
 import android.content.Intent
 import androidx.annotation.StyleRes
 import androidx.annotation.VisibleForTesting
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import mozilla.components.lib.crash.handler.ExceptionHandler
@@ -19,6 +21,7 @@ import mozilla.components.lib.crash.notification.CrashNotification
 import mozilla.components.lib.crash.prompt.CrashPrompt
 import mozilla.components.lib.crash.service.CrashReporterService
 import mozilla.components.support.base.log.logger.Logger
+import kotlin.coroutines.CoroutineContext
 
 /**
  * A generic crash reporter that can report crashes to multiple services.
@@ -51,7 +54,8 @@ class CrashReporter(
     private val shouldPrompt: Prompt = Prompt.NEVER,
     var enabled: Boolean = true,
     internal val promptConfiguration: PromptConfiguration = PromptConfiguration(),
-    private val nonFatalCrashIntent: PendingIntent? = null
+    private val nonFatalCrashIntent: PendingIntent? = null,
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 ) {
     internal val logger = Logger("mozac/CrashReporter")
     internal val crashBreadcrumbs = BreadcrumbPriorityQueue(BREADCRUMB_MAX_NUM)
@@ -79,7 +83,8 @@ class CrashReporter(
      * Submit a crash report to all registered services.
      */
     fun submitReport(crash: Crash, then: () -> Unit = {}): Job {
-        return GlobalScope.launch(Dispatchers.IO) {
+        return scope.launch {
+            delay(5000)
             services.forEach { service ->
                 when (crash) {
                     is Crash.NativeCodeCrash -> service.report(crash)

@@ -7,20 +7,35 @@ package mozilla.components.lib.crash.handler
 import android.content.ComponentName
 import android.content.Intent
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.TestCoroutineDispatcher
+import kotlinx.coroutines.test.TestCoroutineScope
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.setMain
 import mozilla.components.lib.crash.Crash
 import mozilla.components.lib.crash.CrashReporter
 import mozilla.components.lib.crash.service.CrashReporterService
 import mozilla.components.support.test.robolectric.testContext
+import mozilla.components.support.test.rule.MainCoroutineRule
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.fail
+import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.doNothing
 import org.mockito.Mockito.spy
 import java.lang.Thread.sleep
+import kotlin.coroutines.experimental.migration.toExperimentalCoroutineContext
 
+@ExperimentalCoroutinesApi
 @RunWith(AndroidJUnit4::class)
 class CrashHandlerServiceTest {
 
@@ -30,7 +45,7 @@ class CrashHandlerServiceTest {
     }
 
     @Test
-    fun `CrashHandlerService will forward GeckoView crash to crash reporter`() {
+    fun `CrashHandlerService will forward GeckoView crash to crash reporter`() = runBlockingTest {
         var caughtCrash: Crash.NativeCodeCrash? = null
 
         CrashReporter(
@@ -47,7 +62,8 @@ class CrashHandlerServiceTest {
                 override fun report(throwable: Throwable) {
                     fail("Didn't expect caught exception")
                 }
-            })
+            }),
+            scope = this
         ).install(testContext)
 
         val intent = Intent("org.mozilla.gecko.ACTION_CRASHED")
@@ -68,9 +84,10 @@ class CrashHandlerServiceTest {
 
         val service = spy(CrashHandlerService())
         doNothing().`when`(service).kill()
-        service.onHandleIntent(intent)
 
-        sleep(100)
+        service.onHandleIntent(intent)
+        advanceUntilIdle()
+
         assertNotNull(caughtCrash)
 
         val nativeCrash = caughtCrash
