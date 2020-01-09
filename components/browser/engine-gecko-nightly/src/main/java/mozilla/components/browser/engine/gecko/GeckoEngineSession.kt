@@ -812,6 +812,10 @@ class GeckoEngineSession(
         }
     }
 
+    override fun setActive() {
+        geckoSession.setActive(true)
+    }
+
     private fun createGeckoSession(shouldOpen: Boolean = true) {
         this.geckoSession = geckoSessionProvider()
 

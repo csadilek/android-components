@@ -142,8 +142,15 @@ object WebExtensionSupport {
                     }
                     null
                 } else {
+                    val curSelectedTab = store.state.tabs.find { it.id == store.state.selectedTabId}
+                    val curSelectedEngineSession = curSelectedTab?.let {
+                        it.engineState.engineSession
+                    }
+
                     val sessionId = openTab(store, onNewTabOverride, webExtension, engineSession, "")
                     store.dispatch(WebExtensionAction.UpdateBrowserActionPopupSession(webExtension.id, sessionId))
+
+                    curSelectedEngineSession?.setActive()
                     engineSession
                 }
             }

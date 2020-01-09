@@ -528,4 +528,9 @@ abstract class EngineSession(
      */
     @CallSuper
     open fun close() = delegate.unregisterObservers()
+
+    /**
+     * Hackety hack.
+     */
+    open fun setActive() = Unit
 }
