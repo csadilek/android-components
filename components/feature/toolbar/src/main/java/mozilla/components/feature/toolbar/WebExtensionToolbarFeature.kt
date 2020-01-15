@@ -87,20 +87,8 @@ class WebExtensionToolbarFeature(
                     toolbarAction
                 }
 
-                // Check if we have a tab-specific override and apply it.
-                // Note that tab-specific actions only contain the values that
-                // should be overridden. All other values will be null and should
-                // therefore *not* be applied / overridden.
                 tab?.extensionState?.get(extension.id)?.browserAction?.let {
-                    toolbarAction.browserAction = BrowserAction(
-                        title = it.title ?: browserAction.title,
-                        enabled = it.enabled ?: browserAction.enabled,
-                        badgeText = it.badgeText ?: browserAction.badgeText,
-                        badgeBackgroundColor = it.badgeBackgroundColor ?: browserAction.badgeBackgroundColor,
-                        badgeTextColor = it.badgeTextColor ?: browserAction.badgeTextColor,
-                        loadIcon = it.loadIcon ?: browserAction.loadIcon,
-                        onClick = it.onClick
-                    )
+                    toolbarAction.browserAction = browserAction.applyOverride(it)
                     toolbar.invalidateActions()
                 }
             }
