@@ -17,11 +17,16 @@ import androidx.fragment.app.FragmentTransaction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestCoroutineDispatcher
+import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.state.BrowserState
+import mozilla.components.browser.state.state.ContentState
 import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.browser.state.state.createCustomTab
 import mozilla.components.browser.state.state.createTab
@@ -40,8 +45,10 @@ import mozilla.components.concept.engine.prompt.PromptRequest.TextPrompt
 import mozilla.components.concept.engine.prompt.ShareData
 import mozilla.components.feature.prompts.dialog.ChoiceDialogFragment
 import mozilla.components.feature.prompts.dialog.MultiButtonDialogFragment
+import mozilla.components.feature.prompts.dialog.PromptDialogFragment
 import mozilla.components.feature.prompts.file.FilePicker.Companion.FILE_PICKER_ACTIVITY_REQUEST_CODE
 import mozilla.components.feature.prompts.share.ShareDelegate
+import mozilla.components.lib.state.ext.flow
 import mozilla.components.support.test.any
 import mozilla.components.support.test.eq
 import mozilla.components.support.test.ext.joinBlocking
@@ -55,10 +62,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mock
+import org.mockito.Mockito
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.never
 import org.mockito.Mockito.spy
+import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
+import org.mockito.MockitoAnnotations
 import java.security.InvalidParameterException
 import java.util.Date
 
@@ -843,4 +855,154 @@ class PromptFeatureTest {
         doReturn(transaction).`when`(transaction).remove(any())
         return fragmentManager
     }
+}
+
+class DismissOnPageLoadTest {
+
+    private lateinit var dialog: PromptDialogFragment
+
+    @Before
+    fun before() {
+        dialog = Mockito.mock(PromptDialogFragment::class.java)
+    }
+
+    @Test
+    fun `dialog will never be dismissed if page load does not occur`() = runBlocking {
+        val stateFlow = flowOf(
+            browserState(ContentState(
+                url = "www.mozilla.org",
+                title = "title",
+                progress = 0
+            )),
+            browserState(ContentState(
+                url = "www.mozilla.org",
+                title = "now it's this!",
+                progress = 0
+            ))
+        )
+
+        dismissOnPageMostlyLoaded(dialog, stateFlow)
+
+        verify(dialog, times(0)).dismiss()
+    }
+
+    @Test
+    fun `dialog will never be dismissed if progress does not reach 90%`() = runBlocking {
+        val stateFlow = flowOf(
+            browserState(0),
+            browserState(10),
+            browserState(11),
+            browserState(28),
+            browserState(32),
+            browserState(49),
+            browserState(60),
+            browserState(89)
+            )
+
+        dismissOnPageMostlyLoaded(dialog, stateFlow)
+
+        verify(dialog, times(0)).dismiss()
+    }
+
+    @Test
+    fun `dialog will be dismissed if progress reaches 90%`() = runBlocking {
+        val stateFlow = flowOf(
+            browserState(ContentState(
+                url = "www.mozilla.org",
+                loading = true
+            )),
+            browserState(0),
+            browserState(10),
+            browserState(11),
+            browserState(28),
+            browserState(32),
+            browserState(49),
+            browserState(60),
+            browserState(89),
+            browserState(90)
+        )
+
+        dismissOnPageMostlyLoaded(dialog, stateFlow)
+
+        verify(dialog, times(1)).dismiss()
+    }
+
+    @Test
+    fun `dialog will be dismissed if progress skips past 90%`() = runBlocking {
+        val stateFlow = flowOf(
+            browserState(ContentState(
+                url = "www.mozilla.org",
+                loading = true
+            )),
+            browserState(0),
+            browserState(10),
+            browserState(ContentState(
+                url = "www.mozilla.org",
+                loading = false,
+                progress = 100
+            ))
+        )
+
+        dismissOnPageMostlyLoaded(dialog, stateFlow)
+
+        verify(dialog, times(1)).dismiss()
+    }
+
+    @Test
+    fun `dialog will be dismissed only once if page loads twice`() = runBlocking {
+        val stateFlow = flowOf(
+            browserState(ContentState(
+                url = "www.mozilla.org",
+                loading = true
+            )),
+            browserState(0),
+            browserState(10),
+            browserState(11),
+            browserState(28),
+            browserState(32),
+            browserState(49),
+            browserState(60),
+            browserState(89),
+            browserState(90),
+            browserState(ContentState(
+                url = "www.mozilla.org",
+                loading = false,
+                progress = 100
+            )),
+            browserState(ContentState(
+                url = "www.wikipedia.org",
+                loading = true
+            )),
+            browserState(0),
+            browserState(10),
+            browserState(11),
+            browserState(28),
+            browserState(32),
+            browserState(49),
+            browserState(60),
+            browserState(89),
+            browserState(90),
+            browserState(ContentState(
+                url = "www.wikipedia.org",
+                loading = false,
+                progress = 100
+            ))
+        )
+
+        dismissOnPageMostlyLoaded(dialog, stateFlow)
+
+        verify(dialog, times(1)).dismiss()
+    }
+
+    private fun browserState(content: ContentState) = BrowserState(
+        tabs = listOf(TabSessionState(id = "1", content = content)),
+        selectedTabId = "1"
+    )
+
+    private fun browserState(progress: Int) = browserState(
+        ContentState(
+            url = "www.mozilla.org",
+            progress = progress
+        )
+    )
 }

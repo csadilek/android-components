@@ -11,7 +11,10 @@ import androidx.annotation.VisibleForTesting.PRIVATE
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
@@ -23,6 +26,7 @@ import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.selector.findCustomTabOrSelectedTab
 import mozilla.components.browser.state.selector.findTabOrCustomTab
 import mozilla.components.browser.state.selector.selectedTab
+import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.storage.Login
@@ -568,6 +572,15 @@ internal fun BrowserStore.consumePromptFrom(
 }
 
 /**
+ * See overload of [dismissOnPageMostlyLoaded]
+ */
+private fun dismissOnPageMostlyLoaded(dialog: PromptDialogFragment, store: BrowserStore, scope: CoroutineScope?) {
+    scope?.launch {
+        dismissOnPageMostlyLoaded(dialog, store.flow())
+    }
+}
+
+/**
  * Dismisses [dialog] when:
  * - Page is actively loading
  * - Load has nearly completed
@@ -576,14 +589,16 @@ internal fun BrowserStore.consumePromptFrom(
  * last elements are loading in.
  */
 @VisibleForTesting(otherwise = PRIVATE)
-internal fun dismissOnPageMostlyLoaded(dialog: PromptDialogFragment, store: BrowserStore, scope: CoroutineScope?) {
-    scope?.launch {
-        store.flow()
-            .mapNotNull { it.selectedTab?.content?.progress }
-            .ifChanged()
-            .drop(1)
-            .filter { progress -> progress > 90 }
-            .take(1)
-            .collect { dialog.dismiss() }
-    }
+internal suspend fun dismissOnPageMostlyLoaded(dialog: PromptDialogFragment, browserState: Flow<BrowserState>) {
+    browserState
+        .mapNotNull { it.selectedTab?.content?.progress }
+        .ifChanged()
+        // Drop initial value
+        .drop(1)
+        .filter { progress -> progress >= 90 }
+        // We only care about the first time this happens
+        .take(1)
+        .collect {
+            dialog.dismiss()
+        }
 }
