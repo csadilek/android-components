@@ -13,7 +13,12 @@ import androidx.fragment.app.FragmentManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.launch
 import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.selector.findCustomTabOrSelectedTab
 import mozilla.components.browser.state.selector.findTabOrCustomTab
@@ -53,12 +58,14 @@ import mozilla.components.feature.prompts.file.FilePicker
 import mozilla.components.concept.storage.LoginValidationDelegate
 import mozilla.components.feature.prompts.share.DefaultShareDelegate
 import mozilla.components.feature.prompts.share.ShareDelegate
+import mozilla.components.lib.state.ext.flow
 import mozilla.components.lib.state.ext.flowScoped
 import mozilla.components.support.base.feature.LifecycleAwareFeature
 import mozilla.components.support.base.feature.OnNeedToRequestPermissions
 import mozilla.components.support.base.feature.PermissionsFeature
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifAnyChanged
+import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifChanged
 import java.security.InvalidParameterException
 import java.util.Date
 
@@ -519,6 +526,7 @@ class PromptFeature private constructor(
 
         if (canShowThisPrompt(promptRequest)) {
             dialog.show(fragmentManager, FRAGMENT_TAG)
+            dismissOnPageMostlyLoaded(dialog, store, scope)
         } else {
             (promptRequest as PromptRequest.Dismissible).onDismiss()
             store.dispatch(ContentAction.ConsumePromptRequestAction(session.id))
@@ -556,5 +564,26 @@ internal fun BrowserStore.consumePromptFrom(
             consume(it)
             dispatch(ContentAction.ConsumePromptRequestAction(tab.id))
         }
+    }
+}
+
+/**
+ * Dismisses [dialog] when:
+ * - Page is actively loading
+ * - Load has nearly completed
+ *
+ * We can't dismiss on page load complete because some pages are usable for a long time as their
+ * last elements are loading in.
+ */
+@VisibleForTesting(otherwise = PRIVATE)
+internal fun dismissOnPageMostlyLoaded(dialog: PromptDialogFragment, store: BrowserStore, scope: CoroutineScope?) {
+    scope?.launch {
+        store.flow()
+            .mapNotNull { it.selectedTab?.content?.progress }
+            .ifChanged()
+            .drop(1)
+            .filter { progress -> progress > 90 }
+            .take(1)
+            .collect { dialog.dismiss() }
     }
 }
