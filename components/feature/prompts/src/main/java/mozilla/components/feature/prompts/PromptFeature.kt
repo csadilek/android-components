@@ -6,6 +6,7 @@ package mozilla.components.feature.prompts
 
 import android.app.Activity
 import android.content.Intent
+import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.PRIVATE
 import androidx.fragment.app.Fragment
@@ -18,12 +19,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flowViaChannel
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.selector.findCustomTabOrSelectedTab
+import mozilla.components.browser.state.selector.findTab
 import mozilla.components.browser.state.selector.findTabOrCustomTab
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.BrowserState
@@ -70,8 +73,9 @@ import mozilla.components.support.base.feature.PermissionsFeature
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifAnyChanged
 import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifChanged
+import java.lang.ref.WeakReference
 import java.security.InvalidParameterException
-import java.util.Date
+import java.util.*
 
 @VisibleForTesting(otherwise = PRIVATE)
 internal const val FRAGMENT_TAG = "mozac_feature_prompt_dialog"
@@ -119,10 +123,13 @@ class PromptFeature private constructor(
     onNeedToRequestPermissions: OnNeedToRequestPermissions
 ) : LifecycleAwareFeature, PermissionsFeature, Prompter {
     private var scope: CoroutineScope? = null
+    private var scope2: CoroutineScope? = null
     private var activePromptRequest: PromptRequest? = null
 
     internal val promptAbuserDetector = PromptAbuserDetector()
     private val logger = Logger("PromptFeature")
+
+    private var activePrompt: WeakReference<PromptDialogFragment>? = null
 
     constructor(
         activity: Activity,
@@ -216,6 +223,16 @@ class PromptFeature private constructor(
                 }
         }
 
+        scope2 = store.flowScoped { flow ->
+            flow.mapNotNull { state -> state.findCustomTabOrSelectedTab(customTabId) }
+                .ifChanged { it.content.progress }
+                .filter { it.content.progress >= 90 }
+                .collect {
+                    activePrompt?.get()?.dismiss()
+                    activePrompt?.clear()
+                }
+        }
+
         fragmentManager.findFragmentByTag(FRAGMENT_TAG)?.let { fragment ->
             // There's still a [PromptDialogFragment] visible from the last time. Re-attach this feature so that the
             // fragment can invoke the callback on this feature once the user makes a selection. This can happen when
@@ -229,6 +246,7 @@ class PromptFeature private constructor(
      */
     override fun stop() {
         scope?.cancel()
+        scope2?.cancel()
     }
 
     /**
@@ -278,7 +296,7 @@ class PromptFeature private constructor(
      * @param sessionId this is the id of the session which requested the prompt.
      */
     override fun onCancel(sessionId: String) {
-        store.consumePromptFrom(sessionId) {
+        store.consumePromptFrom(sessionId, activePrompt) {
             when (it) {
                 is PromptRequest.Dismissible -> it.onDismiss()
                 is PromptRequest.Popup -> it.onDeny()
@@ -295,7 +313,7 @@ class PromptFeature private constructor(
      */
     @Suppress("UNCHECKED_CAST", "ComplexMethod")
     override fun onConfirm(sessionId: String, value: Any?) {
-        store.consumePromptFrom(sessionId) {
+        store.consumePromptFrom(sessionId, activePrompt) {
             when (it) {
                 is TimeSelection -> it.onConfirm(value as Date)
                 is Color -> it.onConfirm(value as String)
@@ -348,7 +366,7 @@ class PromptFeature private constructor(
      * @param sessionId that requested to show the dialog.
      */
     override fun onClear(sessionId: String) {
-        store.consumePromptFrom(sessionId) {
+        store.consumePromptFrom(sessionId, activePrompt) {
             when (it) {
                 is TimeSelection -> it.onClear()
             }
@@ -530,7 +548,7 @@ class PromptFeature private constructor(
 
         if (canShowThisPrompt(promptRequest)) {
             dialog.show(fragmentManager, FRAGMENT_TAG)
-            dismissOnPageMostlyLoaded(dialog, store, scope)
+            activePrompt = WeakReference(dialog)
         } else {
             (promptRequest as PromptRequest.Dismissible).onDismiss()
             store.dispatch(ContentAction.ConsumePromptRequestAction(session.id))
@@ -557,6 +575,7 @@ class PromptFeature private constructor(
 
 internal fun BrowserStore.consumePromptFrom(
     sessionId: String?,
+    activePrompt: WeakReference<PromptDialogFragment>? = null,
     consume: (PromptRequest) -> Unit
 ) {
     if (sessionId == null) {
@@ -564,6 +583,7 @@ internal fun BrowserStore.consumePromptFrom(
     } else {
         state.findTabOrCustomTab(sessionId)
     }?.let { tab ->
+        activePrompt?.clear()
         tab.content.promptRequest?.let {
             consume(it)
             dispatch(ContentAction.ConsumePromptRequestAction(tab.id))
@@ -571,34 +591,4 @@ internal fun BrowserStore.consumePromptFrom(
     }
 }
 
-/**
- * See overload of [dismissOnPageMostlyLoaded]
- */
-private fun dismissOnPageMostlyLoaded(dialog: PromptDialogFragment, store: BrowserStore, scope: CoroutineScope?) {
-    scope?.launch {
-        dismissOnPageMostlyLoaded(dialog, store.flow())
-    }
-}
 
-/**
- * Dismisses [dialog] when:
- * - Page is actively loading
- * - Load has nearly completed
- *
- * We can't dismiss on page load complete because some pages are usable for a long time as their
- * last elements are loading in.
- */
-@VisibleForTesting(otherwise = PRIVATE)
-internal suspend fun dismissOnPageMostlyLoaded(dialog: PromptDialogFragment, browserState: Flow<BrowserState>) {
-    browserState
-        .mapNotNull { it.selectedTab?.content?.progress }
-        .ifChanged()
-        // Drop initial value
-        .drop(1)
-        .filter { progress -> progress >= 90 }
-        // We only care about the first time this happens
-        .take(1)
-        .collect {
-            dialog.dismiss()
-        }
-}
