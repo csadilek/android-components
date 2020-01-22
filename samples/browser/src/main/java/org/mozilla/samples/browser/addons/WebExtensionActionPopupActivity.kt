@@ -46,15 +46,24 @@ class WebExtensionActionPopupActivity : AppCompatActivity() {
             else -> super.onCreateView(parent, name, context, attrs)
         }
 
+    override fun onBackPressed() {
+        val webExtensionId = requireNotNull(intent.getStringExtra("web_extension_id"))
+        components.store.dispatch(
+                WebExtensionAction.UpdatePopupSessionAction(webExtensionId, popupSession = null)
+        )
+        super.onBackPressed()
+    }
+
     /**
      * A fragment to show the web extension action popup with [EngineView].
      */
     class WebExtensionActionPopupFragment : Fragment() {
-        private var engineSession: EngineSession? = null
         private lateinit var webExtensionId: String
+        private var engineSession: EngineSession? = null
 
         override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
             webExtensionId = requireNotNull(arguments?.getString("web_extension_id"))
+            engineSession = components.store.state.extensions[webExtensionId]?.popupSession
 
             return inflater.inflate(R.layout.fragment_add_on_settings, container, false)
         }
@@ -63,36 +72,22 @@ class WebExtensionActionPopupActivity : AppCompatActivity() {
         override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
             super.onViewCreated(view, savedInstanceState)
 
-            // Fragment could return to the layout from the back stack. If so, reuse the engineSession.
-            engineSession?.let {
-                engineSession = it
-                addonSettingsEngineView.render(it)
+            val session = engineSession
+            if (session != null) {
+                addonSettingsEngineView.render(session)
             }
-
-            consumeFrom(context!!.components.store) { state ->
-                state.extensions[webExtensionId]?.let { extState ->
-                    extState.popupSession?.let {
-                        engineSession = it
-                        addonSettingsEngineView.render(it)
+            else {
+                consumeFrom(context!!.components.store) { state ->
+                    state.extensions[webExtensionId]?.let { extState ->
+                        extState.popupSession?.let {
+                            if (engineSession == null) {
+                                addonSettingsEngineView.render(it)
+                                engineSession = it
+                            }
+                        }
                     }
                 }
             }
-        }
-
-        override fun onDestroyView() {
-            engineSession?.let {
-                it.close()
-                context!!.components.store.dispatch(
-                    WebExtensionAction.UpdatePopupSessionAction(webExtensionId, popupSession = null)
-                )
-            }
-
-            super.onDestroyView()
-        }
-
-        override fun onDestroy() {
-            engineSession = null
-            super.onDestroy()
         }
 
         companion object {
