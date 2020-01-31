@@ -129,7 +129,7 @@ open class Store<S : State, A : Action>(
     ) {
         private val storeReference = WeakReference(store)
         internal var binding: Binding? = null
-        private var active = false
+        @Volatile private var active = false
 
         /**
          * Resumes the [Subscription]. The [Observer] will get notified for every state change.
@@ -151,13 +151,6 @@ open class Store<S : State, A : Action>(
             active = false
         }
 
-        @Synchronized
-        internal fun dispatch(state: S) {
-            if (active) {
-                observer.invoke(state)
-            }
-        }
-
         /**
          * Unsubscribe from the [Store].
          *
@@ -172,6 +165,27 @@ open class Store<S : State, A : Action>(
             storeReference.clear()
 
             binding?.unbind()
+        }
+
+        /**
+         * Notifies this subscription's observer of a state change.
+         *
+         * @param state the updated state.
+         */
+        // NB: Synchronizing this method will introduce a deadlock:
+        // Dispatching of state changes is executed on a dedicated thread and
+        // guarded by a lock on the store. Other synchronized subscription
+        // methods are invoked for lifecycle changes on the main thread
+        // and need the store lock as well (e.g. to read the current state on
+        // resume). Therefore, these subscription "lifecycle" methods
+        // can not be guarded by the same lock as dispatch. If a lifecycle
+        // event occurs and waits on the store lock we have to make sure we
+        // can still dispatch messages. Otherwise, the store lock would be
+        // never become available.
+        internal fun dispatch(state: S) {
+            if (active) {
+                observer.invoke(state)
+            }
         }
 
         interface Binding {
