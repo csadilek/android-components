@@ -51,6 +51,7 @@ import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.ArgumentMatchers.anyList
 import org.mockito.ArgumentMatchers.anyString
+import org.mockito.Mockito
 import org.mockito.Mockito.never
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
@@ -2228,6 +2229,22 @@ class GeckoEngineSessionTest {
 
         engineSession.close()
         assertFalse(engineSession.firstContentfulPaint)
+    }
+
+    @Test
+    fun `getIssuerName returns correct substring`() {
+        val unparsedIssuerName = "Verified By: CN=Digicert SHA2 Extended Validation Server CA,OU=www.digicert.com,O=DigiCert Inc,C=US"
+        val parsedIssuerName = "DigiCert Inc"
+        val securityInfo = mock<SecurityInformation>()
+        Mockito.doReturn("Verified By: CN=Digicert SHA2 Extended Validation Server CA,OU=www.digicert.com,O=DigiCert Inc,C=US").when(securityInfo.certificate?.issuerDN?.name)
+        progressDelegate.value.onSecurityChange(mock(), securityInfo)
+        // What I would like to do
+        // Return predetermined string when getting name from mock security info
+        // Run method GeckoEngine.ProgressDelegate.SecurityInformation.getIssuerName()
+        // Compare return method to provided string
+        // Then do another test with a null string and see whether the full string is returned when the method can't be parsed
+
+        assertEquals(parsedIssuerName)
     }
 
     private fun mockGeckoSession(): GeckoSession {
