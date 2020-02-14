@@ -51,7 +51,6 @@ import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.ArgumentMatchers.anyList
 import org.mockito.ArgumentMatchers.anyString
-import org.mockito.Mockito
 import org.mockito.Mockito.never
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
@@ -74,6 +73,9 @@ import org.mozilla.geckoview.WebRequestError
 import org.mozilla.geckoview.WebRequestError.ERROR_CATEGORY_UNKNOWN
 import org.mozilla.geckoview.WebRequestError.ERROR_MALFORMED_URI
 import org.mozilla.geckoview.WebRequestError.ERROR_UNKNOWN
+import java.security.Principal
+import java.security.cert.X509Certificate
+
 typealias GeckoAntiTracking = ContentBlocking.AntiTracking
 typealias GeckoSafeBrowsing = ContentBlocking.SafeBrowsing
 typealias GeckoCookieBehavior = ContentBlocking.CookieBehavior
@@ -490,9 +492,17 @@ class GeckoEngineSessionTest {
         verify(geckoSession, never()).restoreState(any())
     }
 
-    class MockSecurityInformation(origin: String) : SecurityInformation() {
+    class MockSecurityInformation(
+        origin: String? = null,
+        certificate: X509Certificate? = null
+    ) : SecurityInformation() {
         init {
-            ReflectionUtils.setField(this, "origin", origin)
+            origin?.let {
+                ReflectionUtils.setField(this, "origin", origin)
+            }
+            certificate?.let {
+                ReflectionUtils.setField(this, "certificate", certificate)
+            }
         }
     }
 
@@ -2232,19 +2242,29 @@ class GeckoEngineSessionTest {
     }
 
     @Test
-    fun `getIssuerName returns correct substring`() {
+    fun `certificate issuer is parsed and provided onSecurityChange`() {
+        val engineSession = GeckoEngineSession(mock(), geckoSessionProvider = geckoSessionProvider)
+
+        var observedIssuer: String? = null
+        engineSession.register(object : EngineSession.Observer {
+            override fun onSecurityChange(secure: Boolean, host: String?, issuer: String?) {
+                observedIssuer = issuer
+            }
+        })
+
+        captureDelegates()
+
         val unparsedIssuerName = "Verified By: CN=Digicert SHA2 Extended Validation Server CA,OU=www.digicert.com,O=DigiCert Inc,C=US"
         val parsedIssuerName = "DigiCert Inc"
-        val securityInfo = mock<SecurityInformation>()
-        Mockito.doReturn("Verified By: CN=Digicert SHA2 Extended Validation Server CA,OU=www.digicert.com,O=DigiCert Inc,C=US").when(securityInfo.certificate?.issuerDN?.name)
-        progressDelegate.value.onSecurityChange(mock(), securityInfo)
-        // What I would like to do
-        // Return predetermined string when getting name from mock security info
-        // Run method GeckoEngine.ProgressDelegate.SecurityInformation.getIssuerName()
-        // Compare return method to provided string
-        // Then do another test with a null string and see whether the full string is returned when the method can't be parsed
 
-        assertEquals(parsedIssuerName)
+        val certificate: X509Certificate = mock()
+        val principal: Principal = mock()
+        whenever(principal.name).thenReturn(unparsedIssuerName)
+        whenever(certificate.issuerDN).thenReturn(principal)
+
+        val securityInformation = MockSecurityInformation(certificate = certificate)
+        progressDelegate.value.onSecurityChange(mock(), securityInformation)
+        assertEquals(parsedIssuerName, observedIssuer)
     }
 
     private fun mockGeckoSession(): GeckoSession {
