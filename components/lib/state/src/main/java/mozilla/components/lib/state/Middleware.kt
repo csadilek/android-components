@@ -15,7 +15,7 @@ package mozilla.components.lib.state
  * [Middleware] can decide to continue the chain (by calling `next`), intercept the chain (by not
  * invoking `next`). A [Middleware] has no knowledge of what comes before or after it in the chain.
  */
-typealias Middleware<S, A> = (store: MiddlewareStore<S, A>, next: (A) -> Unit, action: A) -> Unit
+typealias Middleware<S, A> = (store: MiddlewareStore<S, A>, next: (A) -> S, action: A) -> S
 
 /**
  * A simplified [Store] interface for the purpose of passing it to a [Middleware].

@@ -163,8 +163,9 @@ class StoreTest {
 
     @Test
     fun `Middleware can intercept actions`() {
-        val interceptingMiddleware: Middleware<TestState, TestAction> = { _, _, _ ->
+        val interceptingMiddleware: Middleware<TestState, TestAction> = { store, _, _ ->
             // Do nothing!
+            store.state
         }
 
         val store = Store(
@@ -210,6 +211,7 @@ class StoreTest {
         val rewritingMiddleware: Middleware<TestState, TestAction> = { store, next, action ->
             if (action == TestAction.IncrementAction) {
                 store.dispatch(TestAction.DecrementAction)
+                store.state
             } else {
                 next(action)
             }
@@ -234,12 +236,13 @@ class StoreTest {
     @Test
     fun `Middleware sees state before and after reducing`() {
         var countBefore = -1
-        var countAfter =  -1
+        var countAfter = -1
 
         val observingMiddleware: Middleware<TestState, TestAction> = { store, next, action ->
             countBefore = store.state.counter
             next(action)
             countAfter = store.state.counter
+            store.state
         }
 
         val store = Store(
@@ -274,6 +277,7 @@ class StoreTest {
                 next(action)
             } catch (e: Exception) {
                 caughtException = e
+                throw e
             }
         }
 

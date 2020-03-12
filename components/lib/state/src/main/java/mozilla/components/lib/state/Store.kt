@@ -32,7 +32,7 @@ open class Store<S : State, A : Action>(
     reducer: Reducer<S, A>,
     middleware: List<Middleware<S, A>> = emptyList()
 ) {
-    private val reducer: (A) -> Unit by lazy {
+    private val reducer: (A) -> S by lazy {
         val store: MiddlewareStore<S, A> = object : MiddlewareStore<S, A> {
             override val state: S
                 get() = this@Store.state
@@ -42,9 +42,10 @@ open class Store<S : State, A : Action>(
             }
         }
 
-        var chain: (A) -> Unit = { action ->
-            val state = reducer(currentState, action)
-            transitionTo(state)
+        var chain: (A) -> S = { action ->
+            val newState = reducer(currentState, action)
+            transitionTo(newState)
+            newState
         }
 
         middleware.reversed().forEach { middleware ->
@@ -104,13 +105,11 @@ open class Store<S : State, A : Action>(
      */
     fun dispatch(action: A) = scope.launch(dispatcherWithExceptionHandler) {
         synchronized(this@Store) {
-            reducer.invoke(action)
+            val newState = reducer.invoke(action)
+            transitionTo(newState)
         }
     }
 
-    /**
-     * Transitions from the current [State] to the passed in [state] and notifies all observers.
-     */
     private fun transitionTo(state: S) {
         if (state == currentState) {
             // Nothing has changed.
