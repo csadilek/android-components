@@ -36,18 +36,19 @@ class AppLinksFeature(
     private val sessionManager: SessionManager,
     private val sessionId: String? = null,
     private val fragmentManager: FragmentManager? = null,
-    private val dialog: RedirectDialogFragment = SimpleRedirectDialogFragment.newInstance(),
     private val launchInApp: () -> Boolean = { false },
     private val useCases: AppLinksUseCases = AppLinksUseCases(context, launchInApp),
     private val failedToLaunchAction: () -> Unit = {}
 ) : LifecycleAwareFeature {
 
+    private var dialog: RedirectDialogFragment? = null
+
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val observer: SelectionAwareSessionObserver = object : SelectionAwareSessionObserver(sessionManager) {
         override fun onLaunchIntentRequest(
-            session: Session,
-            url: String,
-            appIntent: Intent?
+                session: Session,
+                url: String,
+                appIntent: Intent?
         ) {
             if (appIntent == null) {
                 return
@@ -62,6 +63,7 @@ class AppLinksFeature(
                 return
             }
 
+            val dialog = getOrCreateDialog()
             dialog.setAppLinkRedirectUrl(url)
             dialog.onConfirmRedirect = doOpenApp
 
@@ -85,6 +87,17 @@ class AppLinksFeature(
 
     override fun stop() {
         observer.stop()
+    }
+
+    private fun getOrCreateDialog(): RedirectDialogFragment {
+        val existingDialog = dialog
+        if (existingDialog != null) {
+            return existingDialog
+        }
+
+        dialog = SimpleRedirectDialogFragment.newInstance().also {
+            return it
+        }
     }
 
     private fun isAlreadyADialogCreated(): Boolean {

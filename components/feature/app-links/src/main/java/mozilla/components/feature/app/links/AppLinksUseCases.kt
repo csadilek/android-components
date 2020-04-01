@@ -47,10 +47,10 @@ class AppLinksUseCases(
     private val alwaysDeniedSchemes: Set<String> = setOf("file")
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    internal val browserPackageNames: Set<String>
+    internal val browserPackageNames: Lazy<Set<String>>
 
     init {
-        this.browserPackageNames = browserPackageNames ?: findExcludedPackages(unguessableWebUrl)
+        this.browserPackageNames = lazy { browserPackageNames ?: findExcludedPackages(unguessableWebUrl) }
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -131,7 +131,7 @@ class AppLinksUseCases(
         private fun getNonBrowserActivities(intent: Intent): List<ResolveInfo> {
             return findActivities(intent)
                 .map { it.activityInfo.packageName to it }
-                .filter { !browserPackageNames.contains(it.first) || intent.`package` == it.first }
+                .filter { !browserPackageNames.value.contains(it.first) || intent.`package` == it.first }
                 .map { it.second }
         }
 
