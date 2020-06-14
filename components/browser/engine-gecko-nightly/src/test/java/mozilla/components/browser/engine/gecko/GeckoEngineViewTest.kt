@@ -16,6 +16,7 @@ import mozilla.components.support.test.argumentCaptor
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.whenever
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -274,5 +275,21 @@ class GeckoEngineViewTest {
 
         engineView.visibility = View.GONE
         verify(engineView.currentGeckoView)?.visibility = View.GONE
+    }
+
+    @Test
+    fun `canClearSelection should return false for null selection or null selection text`() {
+        val engineView = GeckoEngineView(context)
+        engineView.currentGeckoView = mock()
+        engineView.currentSelection = mock()
+
+        // null selection returns false
+        whenever(engineView.currentSelection?.selection).thenReturn(null)
+        assertFalse(engineView.canClearSelection())
+
+        // null text returns false
+        val selection: GeckoSession.SelectionActionDelegate.Selection = mock()
+        whenever(engineView.currentSelection?.selection).thenReturn(selection)
+        assertFalse(engineView.canClearSelection())
     }
 }
