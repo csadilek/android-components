@@ -52,8 +52,9 @@ internal class EngineViewPresenter(
             // to make sure GeckoView also frees any references to the previous session. However
             // we are seeing problems with that and are temporarily disabling this to investigate.
             // https://github.com/mozilla-mobile/android-components/issues/7753
-            //
-            // engineView.release()
+            if (store.state.tabs.isEmpty()) {
+                engineView.release()
+            }
         } else {
             engineView.render(engineSession)
         }
