@@ -41,8 +41,9 @@ class SearchMiddlewareTest {
 
     @Test
     fun `Loads search engines for region`() {
+        val searchMiddleware = SearchMiddleware(testContext, ioDispatcher = dispatcher)
         val store = BrowserStore(
-            middleware = listOf(SearchMiddleware(testContext, ioDispatcher = dispatcher))
+            middleware = listOf(searchMiddleware)
         )
 
         assertTrue(store.state.search.regionSearchEngines.isEmpty())
@@ -52,9 +53,6 @@ class SearchMiddlewareTest {
         )).joinBlocking()
 
         dispatcher.advanceUntilIdle()
-        // Why?
-        Thread.sleep(1000)
-
         store.waitUntilIdle()
 
         assertTrue(store.state.search.regionSearchEngines.isNotEmpty())
