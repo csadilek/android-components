@@ -23,7 +23,7 @@ import java.lang.ref.WeakReference
 /**
  * A [Toolbar.Action] implementation that shows a [TabCounter].
  */
-@OptIn(ExperimentalCoroutinesApi::class)
+@ExperimentalCoroutinesApi
 class TabCounterToolbarButton(
     private val lifecycleOwner: LifecycleOwner,
     private val isPrivate: Boolean,

@@ -5,8 +5,8 @@
 package mozilla.components.feature.tabs.toolbar
 
 import androidx.lifecycle.LifecycleOwner
-import mozilla.components.browser.session.SessionManager
-import mozilla.components.browser.session.runWithSession
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import mozilla.components.browser.state.selector.findCustomTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.toolbar.Toolbar
 import mozilla.components.ui.tabcounter.TabCounterMenu
@@ -14,16 +14,20 @@ import mozilla.components.ui.tabcounter.TabCounterMenu
 /**
  * Feature implementation for connecting a tabs tray implementation with a toolbar implementation.
  */
-
+@ExperimentalCoroutinesApi
 class TabsToolbarFeature(
     toolbar: Toolbar,
     store: BrowserStore,
+    sessionId: String? = null,
     lifecycleOwner: LifecycleOwner,
     showTabs: () -> Unit,
     tabCounterMenu: TabCounterMenu
 ) {
     init {
         run {
+            // return if it is a custom tab
+            if (sessionId != null && store.state.findCustomTab(sessionId) != null) return@run
+
 //            sessionManager.runWithSession(sessionId) {
 //                it.isCustomTabSession()
 //            }.also { isCustomTab ->

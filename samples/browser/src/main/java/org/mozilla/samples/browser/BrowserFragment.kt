@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import kotlinx.android.synthetic.main.fragment_browser.view.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import mozilla.components.browser.thumbnails.BrowserThumbnails
 import mozilla.components.feature.awesomebar.AwesomeBarFeature
 import mozilla.components.feature.awesomebar.provider.SearchSuggestionProvider
@@ -24,12 +25,14 @@ import mozilla.components.support.base.feature.UserInteractionHandler
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import mozilla.components.support.ktx.android.view.enterToImmersiveMode
 import mozilla.components.support.ktx.android.view.exitImmersiveModeIfNeeded
+import mozilla.components.ui.tabcounter.TabCounterMenu
 import org.mozilla.samples.browser.ext.components
 import org.mozilla.samples.browser.integration.ReaderViewIntegration
 
 /**
  * Fragment used for browsing the web within the main app.
  */
+@ExperimentalCoroutinesApi
 class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
     private val thumbnailsFeature = ViewBoundFeatureWrapper<BrowserThumbnails>()
     private val readerViewFeature = ViewBoundFeatureWrapper<ReaderViewIntegration>()
@@ -52,7 +55,14 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
             addDomainProvider(components.shippedDomainsProvider)
         }
 
-        TabsToolbarFeature(layout.toolbar, components.sessionManager, sessionId, ::showTabs)
+        TabsToolbarFeature(
+            toolbar = layout.toolbar,
+            store = components.store,
+            sessionId = sessionId,
+            lifecycleOwner = viewLifecycleOwner,
+            showTabs = ::showTabs,
+            tabCounterMenu = createTabCounterMenu()
+        )
 
         AwesomeBarFeature(layout.awesomeBar, layout.toolbar, layout.engineView, components.icons)
             .addHistoryProvider(
@@ -163,6 +173,16 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
             commit()
         }
     }
+
+    // Override this to create custom tab counter menu
+    fun createTabCounterMenu(): TabCounterMenu {
+        return TabCounterMenu(requireContext(), onItemTapped())
+    }
+
+    // Override this to create custom tab counter menu
+    fun onItemTapped(): (TabCounterMenu.Item) -> Unit = {
+        // NOOP
+     }
 
     override fun onBackPressed(): Boolean {
         return when {

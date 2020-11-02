@@ -4,51 +4,67 @@
 
 package mozilla.components.feature.tabs.toolbar
 
+import androidx.lifecycle.LifecycleOwner
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import mozilla.components.browser.session.Session
 import mozilla.components.browser.session.SessionManager
+import mozilla.components.browser.state.selector.findCustomTab
+import mozilla.components.browser.state.state.CustomTabSessionState
+import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.toolbar.Toolbar
 import mozilla.components.support.test.any
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.whenever
+import mozilla.components.ui.tabcounter.TabCounterMenu
+import org.junit.Before
 import org.junit.Test
 import org.mockito.Mockito.anyString
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 
+@ExperimentalCoroutinesApi
 class TabsToolbarFeatureTest {
+
+    private val toolbar: Toolbar = mock()
+    private val browserStore: BrowserStore = mock()
+    private val lifecycleOwner: LifecycleOwner = mock()
+    private val showTabs: () -> Unit = mock()
+    private val tabCounterMenu: TabCounterMenu = mock()
+    private var sessionId: String? = "12345"
+    private lateinit var tabsToolbarFeature: TabsToolbarFeature
+
+    private fun createToolbarFeature() {
+        tabsToolbarFeature = TabsToolbarFeature(
+                toolbar,
+                browserStore,
+                sessionId,
+                lifecycleOwner,
+                showTabs,
+                tabCounterMenu
+        )
+    }
 
     @Test
     fun `feature adds "tabs" button to toolbar`() {
-        val toolbar: Toolbar = mock()
-        val sessionManager: SessionManager = mock()
-        TabsToolbarFeature(toolbar, sessionManager) {}
-
+        createToolbarFeature()
         verify(toolbar).addBrowserAction(any())
     }
 
     @Test
     fun `feature does not add tabs button when session is a customtab`() {
-        val toolbar: Toolbar = mock()
-        val sessionManager: SessionManager = mock()
-        val session: Session = mock()
-        whenever(sessionManager.findSessionById(anyString())).thenReturn(session)
-        whenever(session.isCustomTabSession()).thenReturn(true)
+        val mockCustomTabSession: CustomTabSessionState = mock()
+        whenever(browserStore.state.findCustomTab(anyString())).thenReturn(mockCustomTabSession)
 
-        TabsToolbarFeature(toolbar, sessionManager, "123") {}
+        createToolbarFeature()
 
         verify(toolbar, never()).addBrowserAction(any())
     }
 
     @Test
     fun `feature adds tab button when session found but not a customtab`() {
-        val toolbar: Toolbar = mock()
-        val sessionManager: SessionManager = mock()
-        val session: Session = mock()
-        whenever(sessionManager.findSessionById(anyString())).thenReturn(session)
-        whenever(session.isCustomTabSession()).thenReturn(false)
-
-        TabsToolbarFeature(toolbar, sessionManager, "123") {}
-
+        sessionId = null
+        whenever(browserStore.state.findCustomTab(anyString())).thenReturn(null)
+        createToolbarFeature()
         verify(toolbar).addBrowserAction(any())
     }
 }
