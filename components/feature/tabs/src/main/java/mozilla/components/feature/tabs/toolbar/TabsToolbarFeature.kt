@@ -4,9 +4,12 @@
 
 package mozilla.components.feature.tabs.toolbar
 
+import androidx.lifecycle.LifecycleOwner
 import mozilla.components.browser.session.SessionManager
 import mozilla.components.browser.session.runWithSession
+import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.toolbar.Toolbar
+import mozilla.components.ui.tabcounter.TabCounterMenu
 
 /**
  * Feature implementation for connecting a tabs tray implementation with a toolbar implementation.
@@ -14,20 +17,24 @@ import mozilla.components.concept.toolbar.Toolbar
 
 class TabsToolbarFeature(
     toolbar: Toolbar,
-    sessionManager: SessionManager,
-    sessionId: String? = null,
-    showTabs: () -> Unit
+    store: BrowserStore,
+    lifecycleOwner: LifecycleOwner,
+    showTabs: () -> Unit,
+    tabCounterMenu: TabCounterMenu
 ) {
     init {
         run {
-            sessionManager.runWithSession(sessionId) {
-                it.isCustomTabSession()
-            }.also { isCustomTab ->
-                if (isCustomTab) return@run
-            }
+//            sessionManager.runWithSession(sessionId) {
+//                it.isCustomTabSession()
+//            }.also { isCustomTab ->
+//                if (isCustomTab) return@run
+//            }
             val tabsAction = TabCounterToolbarButton(
-                sessionManager,
-                showTabs
+                lifecycleOwner,
+                false,
+                showTabs,
+                store,
+                tabCounterMenu
             )
             toolbar.addBrowserAction(tabsAction)
         }

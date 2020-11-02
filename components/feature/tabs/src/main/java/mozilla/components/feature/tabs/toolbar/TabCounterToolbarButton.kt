@@ -17,6 +17,7 @@ import mozilla.components.lib.state.ext.flowScoped
 import mozilla.components.support.ktx.android.content.res.resolveAttribute
 import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifChanged
 import mozilla.components.ui.tabcounter.TabCounter
+import mozilla.components.ui.tabcounter.TabCounterMenu
 import java.lang.ref.WeakReference
 
 /**
@@ -26,28 +27,19 @@ import java.lang.ref.WeakReference
 class TabCounterToolbarButton(
     private val lifecycleOwner: LifecycleOwner,
     private val isPrivate: Boolean,
-//    private val onItemTapped: (TabCounterMenu.Item) -> Unit = {},
     private val showTabs: () -> Unit,
-    private val store: BrowserStore
+    private val store: BrowserStore,
+    private val menu: TabCounterMenu
 ) : Toolbar.Action {
 
     private var reference: WeakReference<TabCounter> = WeakReference<TabCounter>(null)
 
     override fun createView(parent: ViewGroup): View {
-//        sessionManager.register(sessionManagerObserver, view = parent)
-        
-        // these should be replaced in the fenix impl
-//        val metrics = parent.context.components.analytics.metrics
-//        val settings = parent.context.components.settings
-
         store.flowScoped(lifecycleOwner) { flow ->
             flow.map { state -> state.getNormalOrPrivateTabs(isPrivate).size }
                 .ifChanged()
                 .collect { tabs -> updateCount(tabs) }
         }
-
-//        val menu = TabCounterMenu(parent.context, metrics, onItemTapped)
-//        menu.updateMenu(settings.toolbarPosition)
 
         val view = TabCounter(parent.context).apply {
             reference = WeakReference(this)
@@ -55,10 +47,10 @@ class TabCounterToolbarButton(
                 showTabs.invoke()
             }
 
-//            setOnLongClickListener {
-//                menu.menuController.show(anchor = it)
-//                true
-//            }
+            setOnLongClickListener {
+                menu.menuController.show(anchor = it)
+                true
+            }
 
             addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
                 override fun onViewAttachedToWindow(v: View?) {
