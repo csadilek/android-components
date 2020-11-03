@@ -19,9 +19,11 @@ open class TabCounterMenu(
     open class Item {
         object CloseTab : Item()
         object NewTab : Item()
+        object NewPrivateTab : Item()
     }
 
     private val newTabItem: TextMenuCandidate
+    private val newPrivateTabItem: TextMenuCandidate
     private val closeTabItem: TextMenuCandidate
     val menuController: MenuController by lazy { BrowserMenuController() }
 
@@ -36,6 +38,18 @@ open class TabCounterMenu(
             textStyle = TextStyle()
         ) {
             onItemTapped(Item.NewTab)
+        }
+
+        newPrivateTabItem = TextMenuCandidate(
+            text = "New private tab",
+            start = DrawableMenuIcon(
+                context,
+                R.drawable.mozac_ui_tabcounter_ic_private_browsing,
+                tint = getColor(context, R.color.mozac_ui_tabcounter_default_text)
+            ),
+            textStyle = TextStyle()
+        ) {
+            onItemTapped(Item.NewPrivateTab)
         }
 
 
