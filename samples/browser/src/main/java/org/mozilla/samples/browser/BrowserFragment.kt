@@ -25,7 +25,6 @@ import mozilla.components.support.base.feature.UserInteractionHandler
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import mozilla.components.support.ktx.android.view.enterToImmersiveMode
 import mozilla.components.support.ktx.android.view.exitImmersiveModeIfNeeded
-import mozilla.components.ui.tabcounter.TabCounterMenu
 import org.mozilla.samples.browser.ext.components
 import org.mozilla.samples.browser.integration.ReaderViewIntegration
 
@@ -60,8 +59,7 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
             store = components.store,
             sessionId = sessionId,
             lifecycleOwner = viewLifecycleOwner,
-            showTabs = ::showTabs,
-            tabCounterMenu = createTabCounterMenu()
+            showTabs = ::showTabs
         )
 
         AwesomeBarFeature(layout.awesomeBar, layout.toolbar, layout.engineView, components.icons)
@@ -173,16 +171,6 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
             commit()
         }
     }
-
-    // Override this to create custom tab counter menu
-    fun createTabCounterMenu(): TabCounterMenu {
-        return TabCounterMenu(requireContext(), onItemTapped())
-    }
-
-    // Override this to create custom tab counter menu
-    fun onItemTapped(): (TabCounterMenu.Item) -> Unit = {
-        // NOOP
-     }
 
     override fun onBackPressed(): Boolean {
         return when {
