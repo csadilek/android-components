@@ -26,9 +26,9 @@ dependencies {
     implementation project(':support-utils')
 
     implementation Dependencies.kotlin_stdlib
-    implementation project(path: ':concept-menu')
-    implementation project(path: ':browser-menu2')
-    implementation project(path: ':support-base')
+    implementation project(':concept-menu')
+    implementation project(':browser-menu2')
+    implementation project(':support-base')
 
     testImplementation project(":support-test")
 

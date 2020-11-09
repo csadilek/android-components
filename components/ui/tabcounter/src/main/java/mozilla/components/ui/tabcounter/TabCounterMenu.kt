@@ -31,6 +31,7 @@ open class TabCounterMenu(
                     when (item) {
                         is Item.CloseTab -> {
                             // replace alllll this:
+
                             sessionManager.selectedSession?.let {
                                 // When closing the last tab we must show the undo snackbar in the home fragment
                                 if (sessionManager.sessionsOfType(it.private).count() == 1) {
