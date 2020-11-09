@@ -6,6 +6,7 @@ package mozilla.components.feature.tabs.toolbar
 
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
@@ -29,10 +30,11 @@ class TabCounterToolbarButton(
     private val isPrivate: Boolean,
     private val showTabs: () -> Unit,
     private val store: BrowserStore,
-    private val menu: TabCounterMenu
+    val menu: TabCounterMenu
 ) : Toolbar.Action {
 
-    private var reference: WeakReference<TabCounter> = WeakReference<TabCounter>(null)
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    var reference: WeakReference<TabCounter> = WeakReference<TabCounter>(null)
 
     override fun createView(parent: ViewGroup): View {
         store.flowScoped(lifecycleOwner) { flow ->
@@ -51,14 +53,6 @@ class TabCounterToolbarButton(
                 menu.menuController.show(anchor = it)
                 true
             }
-
-            addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
-                override fun onViewAttachedToWindow(v: View?) {
-                    setCount(store.state.getNormalOrPrivateTabs(isPrivate).size)
-                }
-
-                override fun onViewDetachedFromWindow(v: View?) { /* no-op */ }
-            })
         }
 
         // Set selectableItemBackgroundBorderless
@@ -70,7 +64,8 @@ class TabCounterToolbarButton(
 
     override fun bind(view: View) = Unit
 
-    private fun updateCount(count: Int) {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    fun updateCount(count: Int) {
         reference.get()?.setCountWithAnimation(count)
     }
 }

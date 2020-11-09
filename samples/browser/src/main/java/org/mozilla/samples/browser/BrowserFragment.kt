@@ -25,6 +25,7 @@ import mozilla.components.support.base.feature.UserInteractionHandler
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import mozilla.components.support.ktx.android.view.enterToImmersiveMode
 import mozilla.components.support.ktx.android.view.exitImmersiveModeIfNeeded
+import mozilla.components.ui.tabcounter.TabCounterMenu
 import org.mozilla.samples.browser.ext.components
 import org.mozilla.samples.browser.integration.ReaderViewIntegration
 
@@ -54,12 +55,15 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
             addDomainProvider(components.shippedDomainsProvider)
         }
 
+        val onItemTapped: (TabCounterMenu.Item) -> Unit = { }
+
         TabsToolbarFeature(
             toolbar = layout.toolbar,
             store = components.store,
             sessionId = sessionId,
             lifecycleOwner = viewLifecycleOwner,
-            showTabs = ::showTabs
+            showTabs = ::showTabs,
+            tabCounterMenu = TabCounterMenu(requireContext(), onItemTapped)
         )
 
         AwesomeBarFeature(layout.awesomeBar, layout.toolbar, layout.engineView, components.icons)

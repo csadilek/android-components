@@ -16,6 +16,7 @@ import android.widget.ImageView
 import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.annotation.ColorInt
+import androidx.annotation.VisibleForTesting
 import androidx.core.content.ContextCompat
 import mozilla.components.support.utils.DrawableUtils
 import java.text.NumberFormat
@@ -26,14 +27,19 @@ open class TabCounter @JvmOverloads constructor(
     defStyle: Int = 0
 ) : RelativeLayout(context, attrs, defStyle) {
 
-    private val root: FrameLayout
-    private val box: ImageView
-    private val bar: ImageView
-    private val text: TextView
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    val root: FrameLayout
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    val box: ImageView
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    val bar: ImageView
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    val text: TextView
 
     private val animationSet: AnimatorSet
 
     init {
+        // needed for reference browser
         @ColorInt val defaultTabCounterTint = ContextCompat.getColor(context, R.color.mozac_ui_tabcounter_default_tint)
         val typedArray = context.obtainStyledAttributes(attrs, R.styleable.TabCounter, defStyle, 0)
         @ColorInt val tabCounterTint = typedArray.getColor(R.styleable.TabCounter_drawableColor, defaultTabCounterTint)
@@ -57,6 +63,7 @@ open class TabCounter @JvmOverloads constructor(
         animationSet = createAnimatorSet()
     }
 
+    // needed for reference browser
     private fun tintDrawables(tabCounterTint: Int) {
         val tabCounterBox = DrawableUtils.loadAndTintDrawable(context,
                 R.drawable.mozac_ui_tabcounter_box, tabCounterTint)

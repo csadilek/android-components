@@ -21,27 +21,19 @@ class TabsToolbarFeature(
     sessionId: String? = null,
     lifecycleOwner: LifecycleOwner,
     showTabs: () -> Unit,
-    tabCounterMenu: TabCounterMenu? = null
+    tabCounterMenu: TabCounterMenu
 ) {
     init {
         run {
             if (sessionId != null && store.state.findCustomTab(sessionId) != null) return@run
-            val menu = tabCounterMenu ?: defaultTabCounterMenu()
             val tabsAction = TabCounterToolbarButton(
                 lifecycleOwner,
                 false,
                 showTabs,
                 store,
-                tabCounterMenu ?:
+                tabCounterMenu
             )
             toolbar.addBrowserAction(tabsAction)
         }
-    }
-
-    fun defaultTabCounterMenu(): TabCounterMenu {
-        return TabCounterMenu(
-            context,
-
-        )
     }
 }

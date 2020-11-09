@@ -6,9 +6,8 @@ package mozilla.components.feature.tabs.toolbar
 
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import mozilla.components.browser.session.Session
-import mozilla.components.browser.session.SessionManager
 import mozilla.components.browser.state.selector.findCustomTab
+import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.CustomTabSessionState
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.toolbar.Toolbar
@@ -16,7 +15,6 @@ import mozilla.components.support.test.any
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.whenever
 import mozilla.components.ui.tabcounter.TabCounterMenu
-import org.junit.Before
 import org.junit.Test
 import org.mockito.Mockito.anyString
 import org.mockito.Mockito.never
@@ -35,12 +33,12 @@ class TabsToolbarFeatureTest {
 
     private fun createToolbarFeature() {
         tabsToolbarFeature = TabsToolbarFeature(
-                toolbar,
-                browserStore,
-                sessionId,
-                lifecycleOwner,
-                showTabs,
-                tabCounterMenu
+            toolbar,
+            browserStore,
+            sessionId,
+            lifecycleOwner,
+            showTabs,
+            tabCounterMenu
         )
     }
 
