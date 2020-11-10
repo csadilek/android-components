@@ -4,7 +4,6 @@
 
 package mozilla.components.feature.tabs.toolbar
 
-import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.VisibleForTesting
@@ -39,9 +38,13 @@ class TabCounterToolbarButton(
 
     override fun createView(parent: ViewGroup): View {
         store.flowScoped(lifecycleOwner) { flow ->
-            flow.map { state -> state.getNormalOrPrivateTabs(isPrivate).size }
-                .ifChanged()
-                .collect { tabs -> updateCount(tabs) }
+            flow.map {
+                state -> state.getNormalOrPrivateTabs(isPrivate).size
+            }
+            .ifChanged()
+            .collect {
+                tabs -> updateCount(tabs)
+            }
         }
 
         val view = TabCounter(parent.context).apply {
@@ -67,7 +70,6 @@ class TabCounterToolbarButton(
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     fun updateCount(count: Int) {
-        Log.e("$count", "")
-//        reference.get()?.setCountWithAnimation(count)
+        reference.get()?.setCountWithAnimation(count)
     }
 }
