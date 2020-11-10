@@ -16,9 +16,7 @@ import mozilla.components.support.test.mock
 import mozilla.components.support.test.whenever
 import mozilla.components.ui.tabcounter.TabCounterMenu
 import org.junit.Test
-import org.mockito.Mockito.anyString
-import org.mockito.Mockito.never
-import org.mockito.Mockito.verify
+import org.mockito.Mockito.*
 
 @ExperimentalCoroutinesApi
 class TabsToolbarFeatureTest {
@@ -32,26 +30,30 @@ class TabsToolbarFeatureTest {
     private lateinit var tabsToolbarFeature: TabsToolbarFeature
 
     private fun createToolbarFeature() {
-        tabsToolbarFeature = TabsToolbarFeature(
-            toolbar,
-            browserStore,
-            sessionId,
-            lifecycleOwner,
-            showTabs,
-            tabCounterMenu
+        tabsToolbarFeature = spy(
+            TabsToolbarFeature(
+                toolbar,
+                browserStore,
+                sessionId,
+                lifecycleOwner,
+                showTabs,
+                tabCounterMenu
+            )
         )
     }
 
     @Test
     fun `feature adds "tabs" button to toolbar`() {
         createToolbarFeature()
+        whenever(browserStore.state.findCustomTab(anyString())).thenReturn(null)
+
         verify(toolbar).addBrowserAction(any())
     }
 
     @Test
     fun `feature does not add tabs button when session is a customtab`() {
         val mockCustomTabSession: CustomTabSessionState = mock()
-        whenever(browserStore.state.findCustomTab(anyString())).thenReturn(mockCustomTabSession)
+        whenever(browserStore.state.findCustomTab(sessionId!!)).thenReturn(mockCustomTabSession)
 
         createToolbarFeature()
 
@@ -60,7 +62,6 @@ class TabsToolbarFeatureTest {
 
     @Test
     fun `feature adds tab button when session found but not a customtab`() {
-        sessionId = null
         whenever(browserStore.state.findCustomTab(anyString())).thenReturn(null)
         createToolbarFeature()
         verify(toolbar).addBrowserAction(any())

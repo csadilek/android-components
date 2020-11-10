@@ -4,6 +4,7 @@
 
 package mozilla.components.feature.tabs.toolbar
 
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.VisibleForTesting
@@ -66,6 +67,7 @@ class TabCounterToolbarButton(
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     fun updateCount(count: Int) {
-        reference.get()?.setCountWithAnimation(count)
+        Log.e("$count", "")
+//        reference.get()?.setCountWithAnimation(count)
     }
 }

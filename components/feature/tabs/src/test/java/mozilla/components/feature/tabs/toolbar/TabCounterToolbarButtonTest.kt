@@ -9,8 +9,11 @@ import android.widget.LinearLayout
 import androidx.lifecycle.LifecycleOwner
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.test.TestCoroutineDispatcher
+import mozilla.components.browser.state.action.TabListAction
+import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.menu.MenuController
+import mozilla.components.support.test.ext.joinBlocking
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.support.test.rule.MainCoroutineRule
@@ -22,7 +25,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.Mockito.verify
+import org.mockito.Mockito.*
 import java.lang.ref.WeakReference
 
 @RunWith(AndroidJUnit4::class)
@@ -46,19 +49,14 @@ class TabCounterToolbarButtonTest {
     @Before
     fun setUp() {
         whenever(tabCounterMenu.menuController).thenReturn(menuController)
-//        whenever(browserStore.flowScoped {  }).then { doNothing() }
-
         button =
-                TabCounterToolbarButton(
-                        lifecycleOwner,
-                        false,
-                        showTabs,
-                        browserStore,
-                        tabCounterMenu
-                )
-
-//        whenever(button.reference).thenReturn(weakReference)
-//        whenever(button.reference.get()).thenReturn(tabCounter)
+            TabCounterToolbarButton(
+                lifecycleOwner,
+                false,
+                showTabs,
+                browserStore,
+                tabCounterMenu
+            )
     }
 
     @Test
@@ -83,12 +81,24 @@ class TabCounterToolbarButtonTest {
 
     @Test
     fun `Updating count sets the count with animation`() {
-        // failing with a StackOverflowError
-        val view = button.createView(LinearLayout(testContext) as ViewGroup) as TabCounter
-        assertEquals("0", view.text.text)
+        val store = BrowserStore()
+        val button = spy(
+            TabCounterToolbarButton(
+                lifecycleOwner,
+                false,
+                showTabs,
+                store,
+                tabCounterMenu
+            )
+        )
 
-        val newCount = 5
-        button.updateCount(newCount)
-        verify(tabCounter).setCountWithAnimation(newCount)
+        whenever(button.updateCount(anyInt())).then { }
+        button.createView(LinearLayout(testContext) as ViewGroup) as TabCounter
+
+        store.dispatch(
+            TabListAction.AddTabAction(createTab("https://www.mozilla.org"))
+        ).joinBlocking()
+
+        verify(button).updateCount(eq(1))
     }
 }

@@ -6,7 +6,9 @@ package mozilla.components.feature.tabs.toolbar
 
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import mozilla.components.browser.state.action.BrowserAction
 import mozilla.components.browser.state.selector.findCustomTab
+import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.toolbar.Toolbar
 import mozilla.components.ui.tabcounter.TabCounterMenu
@@ -25,7 +27,9 @@ class TabsToolbarFeature(
 ) {
     init {
         run {
+            // this feature is not used for Custom Tabs
             if (sessionId != null && store.state.findCustomTab(sessionId) != null) return@run
+
             val tabsAction = TabCounterToolbarButton(
                 lifecycleOwner,
                 false,
